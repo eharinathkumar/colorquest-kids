@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Capacitor } from "@capacitor/core";
@@ -8,6 +8,7 @@ import ColorQuestApp from "./App";
 import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
 import { getLearningLesson, getLearningLessons, LEARNING_COUNTS } from "./learning-data";
 import { buildPuzzle, PUZZLE_FAMILIES } from "./puzzle-data";
+import { emptyProgress, PROFILE_STORAGE_KEY, recordCompletion, recordLocation, type FamilyData } from "./profile-data";
 
 vi.mock("@capacitor/filesystem", () => ({
   Directory: { Cache: "CACHE" },
@@ -23,6 +24,8 @@ const canvasContext = {
   beginPath: vi.fn(),
   bezierCurveTo: vi.fn(),
   closePath: vi.fn(),
+  clearRect: vi.fn(),
+  createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
   drawImage: vi.fn(),
   fill: vi.fn(),
   fillRect: vi.fn(),
@@ -30,10 +33,15 @@ const canvasContext = {
   moveTo: vi.fn(),
   rect: vi.fn(),
   restore: vi.fn(),
+  rotate: vi.fn(),
   save: vi.fn(),
   scale: vi.fn(),
+  setLineDash: vi.fn(),
   stroke: vi.fn(),
+  translate: vi.fn(),
   fillStyle: "",
+  globalAlpha: 1,
+  globalCompositeOperation: "source-over",
   lineCap: "round",
   lineJoin: "round",
   lineWidth: 1,
@@ -41,6 +49,13 @@ const canvasContext = {
 };
 
 beforeEach(() => {
+  const family: FamilyData = {
+    version: 2,
+    profiles: [{ id: "profile-test", name: "Maya", age: 6, avatar: "🦊", createdAt: "2026-08-02T00:00:00.000Z" }],
+    activeProfileId: "profile-test",
+    progress: { "profile-test": emptyProgress() },
+  };
+  window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(family));
   Object.values(canvasContext).forEach((value) => {
     if (typeof value === "function" && "mockClear" in value) value.mockClear();
   });
@@ -61,7 +76,7 @@ describe("ColorQuest core journeys", () => {
     expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
   });
 
-  it("places square and triangle stamps without blanking or resizing the mobile canvas", async () => {
+  it("places and edits square and triangle shapes without blanking or resizing the mobile canvas", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
     await user.click(screen.getAllByRole("button", { name: "Start creating" })[0]);
@@ -72,21 +87,39 @@ describe("ColorQuest core journeys", () => {
     const originalHeight = squareCanvas.height;
     fireEvent.pointerDown(squareCanvas, { clientX: 180, clientY: 260, pointerId: 1 });
 
-    expect(canvasContext.rect).toHaveBeenCalledOnce();
     expect(squareCanvas.width).toBe(originalWidth);
     expect(squareCanvas.height).toBe(originalHeight);
+    expect(screen.getByRole("button", { name: "Select square" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "＋ Bigger" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Add triangle shapes" }));
     const triangleCanvas = screen.getByLabelText("Canvas ready to add triangle shapes") as HTMLCanvasElement;
     fireEvent.pointerDown(triangleCanvas, { clientX: 140, clientY: 210, pointerId: 2 });
 
-    expect(canvasContext.moveTo).toHaveBeenCalled();
-    expect(canvasContext.lineTo).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Select triangle" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "↻ Rotate" }));
     expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
   });
 
-  it("sends a drawing to Android's native save/share sheet", async () => {
+  it("supports expressive brushes and base paint without replacing the drawing layer", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await user.click(screen.getAllByRole("button", { name: "Start creating" })[0]);
+
+    await user.click(screen.getByRole("button", { name: "Use crayon brush" }));
+    const canvas = screen.getByLabelText("Free drawing canvas");
+    fireEvent.pointerDown(canvas, { clientX: 70, clientY: 100, pointerId: 3 });
+    fireEvent.pointerMove(canvas, { clientX: 130, clientY: 150, pointerId: 3 });
+    fireEvent.pointerUp(canvas, { clientX: 130, clientY: 150, pointerId: 3 });
+
+    expect(canvasContext.stroke).toHaveBeenCalledTimes(3);
+    await user.click(screen.getByRole("button", { name: "Ocean" }));
+    expect(screen.getByRole("button", { name: "Ocean" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
+  });
+
+  it("saves privately, then lets a parent use Android's native save/share sheet", async () => {
     const user = userEvent.setup();
     vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
     const writeFile = vi.mocked(Filesystem.writeFile).mockResolvedValue({ uri: "content://colorquest/picture.png" });
@@ -94,9 +127,16 @@ describe("ColorQuest core journeys", () => {
 
     render(<ColorQuestApp />);
     await user.click(screen.getAllByRole("button", { name: "Start creating" })[0]);
-    await user.click(screen.getByRole("button", { name: "Save picture" }));
+    await user.click(screen.getByRole("button", { name: "Save to gallery" }));
+    expect(screen.getByRole("status").textContent).toContain("Saved privately");
 
-    expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: "colorquest-1.png" }));
+    await user.click(screen.getByRole("button", { name: "Grown-ups" }));
+    await user.type(screen.getByLabelText("Answer to four plus three"), "7");
+    await user.click(screen.getByRole("button", { name: "Open parent corner" }));
+    const exportButton = await screen.findByRole("button", { name: "Download / share" });
+    await user.click(exportButton);
+
+    await waitFor(() => expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: "maya-s-creation-1.png" })));
     expect(share).toHaveBeenCalledWith(expect.objectContaining({ files: ["content://colorquest/picture.png"] }));
   });
 
@@ -110,6 +150,43 @@ describe("ColorQuest core journeys", () => {
 
     expect(firstPart.getAttribute("style")).toContain("rgb(255, 214, 90)");
     expect(screen.getByRole("heading", { name: "Color adventure" })).toBeTruthy();
+  });
+});
+
+describe("Private child profiles and pacing", () => {
+  it("creates a first profile and chooses content from the child's age", async () => {
+    window.localStorage.clear();
+    window.localStorage.setItem("colorquest-progress", "4");
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+
+    expect(screen.getByRole("heading", { name: "Who is creating today?" })).toBeTruthy();
+    await user.type(screen.getByPlaceholderText("Little artist"), "Aria");
+    fireEvent.change(screen.getByRole("slider", { name: /^Age/ }), { target: { value: "9" } });
+    await user.click(screen.getByRole("button", { name: /Create Aria's space/ }));
+
+    expect(screen.getByRole("button", { name: "Switch profile, currently Aria" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Ages 7–9/ }).getAttribute("aria-pressed")).toBe("true");
+    await waitFor(() => {
+      const saved = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
+      expect(saved.progress[saved.activeProfileId!].legacyCompleted).toBe(4);
+    });
+  });
+
+  it("records resume locations and unique completion separately", () => {
+    const family: FamilyData = {
+      version: 2,
+      profiles: [{ id: "one", name: "One", age: 8, avatar: "🚀", createdAt: "now" }],
+      activeProfileId: "one",
+      progress: { one: emptyProgress() },
+    };
+    const located = recordLocation(family, "one", "science", 5);
+    const completed = recordCompletion(located, "one", "science", 2, 5);
+    const repeated = recordCompletion(completed, "one", "science", 2, 5);
+
+    expect(repeated.progress.one.lastActivity).toBe("science");
+    expect(repeated.progress.one.activities.science.lastPage).toBe(5);
+    expect(repeated.progress.one.activities.science.completed).toEqual(["2:5"]);
   });
 });
 
