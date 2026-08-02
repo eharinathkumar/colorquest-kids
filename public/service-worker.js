@@ -1,4 +1,4 @@
-const VERSION = "colorquest-v1.1";
+const VERSION = "colorquest-v1.2";
 const BASE = self.registration.scope;
 const SHELL = [
   BASE,
