@@ -8,9 +8,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
+import LearningBoard from "./LearningBoard";
+import VariedPuzzleBoard from "./PuzzleBoard";
+import { getLearningLessons, type Subject } from "./learning-data";
 
-type Activity = "draw" | "color" | "puzzle" | "discover";
+type Activity = "draw" | "color" | "puzzle" | "math" | "science" | "discover";
 
 const AGE_GROUPS = [
   {
@@ -50,7 +56,9 @@ const AGE_GROUPS = [
 const ACTIVITY_META: Record<Activity, { icon: string; title: string; copy: string }> = {
   draw: { icon: "✏️", title: "Draw", copy: "A blank canvas for every idea" },
   color: { icon: "🎨", title: "Color", copy: "400 pages for every age" },
-  puzzle: { icon: "🧩", title: "Build puzzles", copy: "400 matching challenges" },
+  puzzle: { icon: "🧩", title: "Build puzzles", copy: "Match, sort, sequence, reason" },
+  math: { icon: "🧮", title: "Math", copy: "Big ideas made visible" },
+  science: { icon: "🧪", title: "Science", copy: "Ask, observe, explain" },
   discover: { icon: "🔭", title: "Discovery Lab", copy: "Real places, space, stories & math" },
 };
 
@@ -208,7 +216,8 @@ function Home({
 
       <section className="learning-strip">
         <div><span>4</span><small>age-adapted worlds</small></div>
-        <div><span>4,800</span><small>creative activities</small></div>
+        <div><span>6</span><small>ways to create and learn</small></div>
+        <div><span>64</span><small>guided math & science concepts</small></div>
         <div><span>{progress}</span><small>activities completed here</small></div>
         <p>Every activity quietly builds fine-motor skills, focus, vocabulary, creativity, or problem-solving.</p>
       </section>
@@ -382,12 +391,31 @@ function DrawingBoard({ page, age, onComplete }: { page: number; age: number; on
     setHistory(next);
   };
 
-  const save = () => {
+  const save = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const filename = `colorquest-${page}.png`;
+    const picture = canvas.toDataURL("image/png");
+
+    if (Capacitor.isNativePlatform()) {
+      const saved = await Filesystem.writeFile({
+        path: filename,
+        data: picture.split(",")[1],
+        directory: Directory.Cache,
+      });
+      await Share.share({
+        title: "My ColorQuest picture",
+        text: "I made this in ColorQuest Kids!",
+        files: [saved.uri],
+        dialogTitle: "Save or share your picture",
+      });
+      onComplete();
+      return;
+    }
+
     const link = document.createElement("a");
-    link.download = `colorquest-${page}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.download = filename;
+    link.href = picture;
     link.click();
     onComplete();
   };
@@ -700,105 +728,6 @@ function ColoringBoard({ page, age, onComplete }: { page: number; age: number; o
   );
 }
 
-const PAIRS = [
-  { item: "🐝", label: "Bee", home: "🌼", homeLabel: "flower" },
-  { item: "🐟", label: "Fish", home: "🌊", homeLabel: "ocean" },
-  { item: "🐦", label: "Bird", home: "🪺", homeLabel: "nest" },
-  { item: "🚀", label: "Rocket", home: "🌙", homeLabel: "space" },
-  { item: "🐒", label: "Monkey", home: "🌴", homeLabel: "tree" },
-  { item: "🐧", label: "Penguin", home: "🧊", homeLabel: "ice" },
-  { item: "🚂", label: "Train", home: "🛤️", homeLabel: "track" },
-  { item: "☁️", label: "Cloud", home: "🌧️", homeLabel: "rain" },
-  { item: "🔑", label: "Key", home: "🔒", homeLabel: "lock" },
-  { item: "🪥", label: "Brush", home: "🦷", homeLabel: "tooth" },
-];
-
-const SCIENCE_PAIRS = [
-  { item: "☿️", label: "Mercury", home: "☀️", homeLabel: "closest to Sun" },
-  { item: "🌍", label: "Earth", home: "💧", homeLabel: "liquid oceans" },
-  { item: "🔴", label: "Mars", home: "🌋", homeLabel: "Olympus Mons" },
-  { item: "🟠", label: "Jupiter", home: "🌀", homeLabel: "Great Red Spot" },
-  { item: "🪐", label: "Saturn", home: "💫", homeLabel: "icy rings" },
-  { item: "🏜️", label: "Desert", home: "🌵", homeLabel: "little rainfall" },
-  { item: "🏔️", label: "Mountain", home: "⬆️", homeLabel: "high elevation" },
-  { item: "🧊", label: "Glacier", home: "🐢", homeLabel: "slow-moving ice" },
-  { item: "🌊", label: "Canyon", home: "💧", homeLabel: "water erosion" },
-  { item: "🌌", label: "Galaxy", home: "⭐", homeLabel: "billions of stars" },
-  { item: "📐", label: "Triangle", home: "➕", homeLabel: "angles total 180°" },
-  { item: "🧲", label: "Magnet", home: "🧭", homeLabel: "magnetic field" },
-];
-
-function PuzzleBoard({ page, age, onComplete }: { page: number; age: number; onComplete: () => void }) {
-  const count = age + 3;
-  const sourcePairs = age >= 2 ? SCIENCE_PAIRS : PAIRS;
-  const chosen = Array.from({ length: count }, (_, index) => sourcePairs[(page + index * 2) % sourcePairs.length]);
-  const homes = [...chosen].sort((a, b) => ((a.home.charCodeAt(0) + page) % 5) - ((b.home.charCodeAt(0) + page) % 5));
-  const [selected, setSelected] = useState<string | null>(null);
-  const [placed, setPlaced] = useState<string[]>([]);
-  const [message, setMessage] = useState("Pick a piece, then tap where it belongs.");
-
-  const tryMatch = (homeLabel: string, itemLabel?: string) => {
-    const active = itemLabel || selected;
-    if (!active) {
-      setMessage("Choose a piece first.");
-      return;
-    }
-    const pair = chosen.find((entry) => entry.label === active);
-    if (pair?.homeLabel === homeLabel) {
-      const next = [...placed, active];
-      setPlaced(next);
-      setSelected(null);
-      setMessage(`Yes! ${pair.label} matches ${pair.homeLabel}.`);
-      if (next.length === count) onComplete();
-    } else {
-      setMessage("Good try—look for another match.");
-    }
-  };
-
-  return (
-    <div className="creative-board puzzle-board">
-      <div className="puzzle-help"><span>🧩</span><div><strong>Match each piece to its partner</strong><p>{message}</p></div></div>
-      <div className="puzzle-stage">
-        <section>
-          <h3>Pieces</h3>
-          <div className="piece-bank">
-            {chosen.map((pair) => (
-              <button
-                key={pair.label}
-                className={`match-piece ${selected === pair.label ? "active" : ""} ${placed.includes(pair.label) ? "placed" : ""}`}
-                onClick={() => setSelected(pair.label)}
-                draggable={!placed.includes(pair.label)}
-                onDragStart={(event) => event.dataTransfer.setData("text/plain", pair.label)}
-                disabled={placed.includes(pair.label)}
-              >
-                <span>{pair.item}</span><small>{pair.label}</small>
-              </button>
-            ))}
-          </div>
-        </section>
-        <section>
-          <h3>Partners</h3>
-          <div className="home-bank">
-            {homes.map((pair) => (
-              <button
-                key={pair.homeLabel}
-                className={`match-home ${placed.includes(pair.label) ? "filled" : ""}`}
-                onClick={() => tryMatch(pair.homeLabel)}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => tryMatch(pair.homeLabel, event.dataTransfer.getData("text/plain"))}
-              >
-                <span>{placed.includes(pair.label) ? pair.item : pair.home}</span>
-                <small>{pair.homeLabel}</small>
-              </button>
-            ))}
-          </div>
-        </section>
-      </div>
-      {placed.length === count && <div className="success-toast" role="status">Puzzle complete! Your matching skills are amazing. ⭐</div>}
-    </div>
-  );
-}
-
 const DISCOVERY_FALLBACKS = [
   "https://images.unsplash.com/photo-1650709137023-399fe2326bd7?auto=format&fit=crop&fm=jpg&q=80&w=1600",
   "https://images.unsplash.com/photo-1626163450208-0fb18eb43b99?auto=format&fit=crop&fm=jpg&q=80&w=1600",
@@ -993,6 +922,10 @@ function Studio({
   onComplete: () => void;
   onParents: () => void;
 }) {
+  const activityCount = activity === "math" || activity === "science"
+    ? getLearningLessons(activity as Subject, age).length
+    : 400;
+
   return (
     <main className="studio-page">
       <AppHeader compact onHome={onHome} onStart={() => onActivity("draw")} onParents={onParents} />
@@ -1026,20 +959,21 @@ function Studio({
               <h2>{ACTIVITY_META[activity].title} adventure</h2>
             </div>
             <div className="page-picker">
-              <button onClick={() => onPage(page === 1 ? 400 : page - 1)} aria-label="Previous activity">←</button>
-              <label>Activity <input type="number" min="1" max="400" value={page} onChange={(event) => onPage(Math.max(1, Math.min(400, Number(event.target.value))))} /> of 400</label>
-              <button onClick={() => onPage(page === 400 ? 1 : page + 1)} aria-label="Next activity">→</button>
+              <button onClick={() => onPage(page === 1 ? activityCount : page - 1)} aria-label="Previous activity">←</button>
+              <label>{activity === "math" || activity === "science" ? "Concept" : "Activity"} <input type="number" min="1" max={activityCount} value={page} onChange={(event) => onPage(Math.max(1, Math.min(activityCount, Number(event.target.value))))} /> of {activityCount}</label>
+              <button onClick={() => onPage(page === activityCount ? 1 : page + 1)} aria-label="Next activity">→</button>
             </div>
           </div>
 
           {activity === "draw" && <DrawingBoard key={`d-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "color" && <ColoringBoard key={`c-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
-          {activity === "puzzle" && <PuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
+          {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
+          {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}`} subject={activity} page={page} age={age} onComplete={onComplete} onSelectLesson={onPage} />}
           {activity === "discover" && <DiscoveryBoard key={`x-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
 
           <div className="next-row">
             <div><span>🌟</span><p><strong>Creative reminder</strong><br />There is no wrong way to make art.</p></div>
-            <button className="primary-button" onClick={() => onPage(page === 400 ? 1 : page + 1)}>Next activity →</button>
+            <button className="primary-button" onClick={() => onPage(page === activityCount ? 1 : page + 1)}>Next {activity === "math" || activity === "science" ? "concept" : "activity"} →</button>
           </div>
         </section>
       </div>
@@ -1115,17 +1049,24 @@ export default function ColorQuestApp() {
   const start = (nextActivity: Activity = "draw") => {
     if (nextActivity === "discover" && age < 2) setAge(2);
     setActivity(nextActivity);
+    setPage(1);
     setView("studio");
     window.scrollTo({ top: 0 });
   };
 
   const changeAge = (nextAge: number) => {
     setAge(nextAge);
+    setPage(1);
     if (nextAge < 2 && activity === "discover") setActivity("draw");
   };
 
+  const changeActivity = (nextActivity: Activity) => {
+    setActivity(nextActivity);
+    setPage(1);
+  };
+
   if (view === "studio") {
-    return <Studio age={age} activity={activity} page={page} onAge={changeAge} onActivity={setActivity} onPage={setPage} onHome={() => setView("home")} onComplete={complete} onParents={() => setView("parents")} />;
+    return <Studio age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={setPage} onHome={() => setView("home")} onComplete={complete} onParents={() => setView("parents")} />;
   }
   if (view === "parents") {
     return <ParentCorner progress={progress} age={age} onHome={() => setView("home")} />;
