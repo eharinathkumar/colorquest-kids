@@ -1,4 +1,5 @@
-export type ActivityKey = "draw" | "color" | "puzzle" | "math" | "science" | "discover";
+export type ActivityKey = "draw" | "color" | "puzzle" | "math" | "science" | "lab" | "discover";
+export type InterestKey = "numbers" | "patterns" | "building" | "animals" | "earth" | "space" | "experiments" | "stories";
 
 export type ChildProfile = {
   id: string;
@@ -17,18 +18,37 @@ export type ProfileProgress = {
   activities: Record<ActivityKey, ActivityProgress>;
   lastActivity: ActivityKey;
   legacyCompleted: number;
+  learning: LearningSignals;
+};
+
+export type LearningSignals = {
+  interestScores: Record<InterestKey, number>;
+  lessonAttempts: Record<string, number>;
+  likedLessons: string[];
+  recentLessons: string[];
 };
 
 export type FamilyData = {
-  version: 2;
+  version: 3;
   profiles: ChildProfile[];
   activeProfileId: string | null;
   progress: Record<string, ProfileProgress>;
 };
 
-export const PROFILE_STORAGE_KEY = "colorquest-family-v2";
+export const PROFILE_STORAGE_KEY = "colorquest-family-v3";
+export const LEGACY_PROFILE_STORAGE_KEY = "colorquest-family-v2";
 export const PROFILE_AVATARS = ["🦊", "🐼", "🦁", "🐬", "🦋", "🚀", "🌈", "🔬"];
-export const ACTIVITY_KEYS: ActivityKey[] = ["draw", "color", "puzzle", "math", "science", "discover"];
+export const ACTIVITY_KEYS: ActivityKey[] = ["draw", "color", "puzzle", "math", "science", "lab", "discover"];
+export const INTEREST_KEYS: InterestKey[] = ["numbers", "patterns", "building", "animals", "earth", "space", "experiments", "stories"];
+
+export function emptyLearningSignals(): LearningSignals {
+  return {
+    interestScores: { numbers: 0, patterns: 0, building: 0, animals: 0, earth: 0, space: 0, experiments: 0, stories: 0 },
+    lessonAttempts: {},
+    likedLessons: [],
+    recentLessons: [],
+  };
+}
 
 export function ageWorldFor(age: number) {
   if (age <= 3) return 0;
@@ -45,15 +65,17 @@ export function emptyProgress(legacyCompleted = 0): ProfileProgress {
       puzzle: { completed: [], lastPage: 1 },
       math: { completed: [], lastPage: 1 },
       science: { completed: [], lastPage: 1 },
+      lab: { completed: [], lastPage: 1 },
       discover: { completed: [], lastPage: 1 },
     },
     lastActivity: "draw",
     legacyCompleted,
+    learning: emptyLearningSignals(),
   };
 }
 
 export function emptyFamilyData(): FamilyData {
-  return { version: 2, profiles: [], activeProfileId: null, progress: {} };
+  return { version: 3, profiles: [], activeProfileId: null, progress: {} };
 }
 
 function validProfile(profile: unknown): profile is ChildProfile {
@@ -65,8 +87,9 @@ function validProfile(profile: unknown): profile is ChildProfile {
 export function loadFamilyData(): FamilyData {
   if (typeof window === "undefined") return emptyFamilyData();
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "null") as Partial<FamilyData> | null;
-    if (!parsed || parsed.version !== 2 || !Array.isArray(parsed.profiles)) return emptyFamilyData();
+    const stored = window.localStorage.getItem(PROFILE_STORAGE_KEY) || window.localStorage.getItem(LEGACY_PROFILE_STORAGE_KEY);
+    const parsed = JSON.parse(stored || "null") as (Partial<FamilyData> & { version?: number }) | null;
+    if (!parsed || ![2, 3].includes(parsed.version || 0) || !Array.isArray(parsed.profiles)) return emptyFamilyData();
     const profiles = parsed.profiles.filter(validProfile);
     const activeProfileId = profiles.some((profile) => profile.id === parsed.activeProfileId)
       ? parsed.activeProfileId || null
@@ -74,8 +97,16 @@ export function loadFamilyData(): FamilyData {
     const progress = { ...(parsed.progress || {}) } as Record<string, ProfileProgress>;
     for (const profile of profiles) {
       if (!progress[profile.id]?.activities) progress[profile.id] = emptyProgress();
+      else {
+        const base = emptyProgress(progress[profile.id].legacyCompleted || 0);
+        progress[profile.id] = {
+          ...progress[profile.id],
+          activities: { ...base.activities, ...progress[profile.id].activities },
+          learning: { ...emptyLearningSignals(), ...(progress[profile.id].learning || {}) },
+        };
+      }
     }
-    return { version: 2, profiles, activeProfileId, progress };
+    return { version: 3, profiles, activeProfileId, progress };
   } catch {
     return emptyFamilyData();
   }
@@ -152,6 +183,57 @@ export function recordCompletion(
         activities: {
           ...current.activities,
           [activity]: { ...current.activities[activity], completed },
+        },
+      },
+    },
+  };
+}
+
+export function recordLearningAttempt(
+  data: FamilyData,
+  profileId: string,
+  subject: "math" | "science",
+  ageWorld: number,
+  page: number,
+): FamilyData {
+  const current = data.progress[profileId] || emptyProgress();
+  const lessonKey = `${subject}:${ageWorld}:${page}`;
+  const learning = current.learning || emptyLearningSignals();
+  return {
+    ...data,
+    progress: {
+      ...data.progress,
+      [profileId]: {
+        ...current,
+        learning: {
+          ...learning,
+          lessonAttempts: { ...learning.lessonAttempts, [lessonKey]: (learning.lessonAttempts[lessonKey] || 0) + 1 },
+          recentLessons: [lessonKey, ...learning.recentLessons.filter((item) => item !== lessonKey)].slice(0, 12),
+        },
+      },
+    },
+  };
+}
+
+export function recordInterest(
+  data: FamilyData,
+  profileId: string,
+  lessonId: string,
+  interest: InterestKey,
+): FamilyData {
+  const current = data.progress[profileId] || emptyProgress();
+  const learning = current.learning || emptyLearningSignals();
+  if (learning.likedLessons.includes(lessonId)) return data;
+  return {
+    ...data,
+    progress: {
+      ...data.progress,
+      [profileId]: {
+        ...current,
+        learning: {
+          ...learning,
+          likedLessons: [...learning.likedLessons, lessonId],
+          interestScores: { ...learning.interestScores, [interest]: (learning.interestScores[interest] || 0) + 1 },
         },
       },
     },

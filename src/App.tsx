@@ -15,10 +15,13 @@ import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
 import ArtworkGallery from "./ArtworkGallery";
 import DrawingStudio from "./DrawingStudio";
 import LearningBoard from "./LearningBoard";
+import ScienceLabBoard from "./ScienceLab";
 import { ProfileHub, ProfileSetup } from "./ProfileViews";
 import VariedPuzzleBoard from "./PuzzleBoard";
 import { addArtwork } from "./artwork-store";
 import { getLearningLessons, type Subject } from "./learning-data";
+import { getScienceLabs } from "./lab-data";
+import { getBookSuggestions, getFavoriteInterest, getMentorRecommendations, INTERESTS } from "./mentor-data";
 import {
   ageWorldFor,
   completedCount,
@@ -26,11 +29,14 @@ import {
   loadFamilyData,
   makeProfile,
   recordCompletion,
+  recordInterest,
+  recordLearningAttempt,
   recordLocation,
   saveFamilyData,
   type ActivityKey,
   type ChildProfile,
   type FamilyData,
+  type InterestKey,
   type ProfileProgress,
 } from "./profile-data";
 
@@ -77,6 +83,7 @@ const ACTIVITY_META: Record<Activity, { icon: string; title: string; copy: strin
   puzzle: { icon: "🧩", title: "Build puzzles", copy: "Match, sort, sequence, reason" },
   math: { icon: "🧮", title: "Math", copy: "Big ideas made visible" },
   science: { icon: "🧪", title: "Science", copy: "Ask, observe, explain" },
+  lab: { icon: "🥼", title: "Science Lab", copy: "Predict, test safely, explain" },
   discover: { icon: "🔭", title: "Discovery Lab", copy: "Real places, space, stories & math" },
 };
 
@@ -163,7 +170,7 @@ function AppHeader({
 
 function Home({
   age,
-  progress,
+  profileProgress,
   profile,
   canContinue,
   onAge,
@@ -171,9 +178,10 @@ function Home({
   onContinue,
   onParents,
   onProfiles,
+  onStartLesson,
 }: {
   age: number;
-  progress: number;
+  profileProgress: ProfileProgress;
   profile: ChildProfile;
   canContinue: boolean;
   onAge: (age: number) => void;
@@ -181,7 +189,11 @@ function Home({
   onContinue: () => void;
   onParents: () => void;
   onProfiles: () => void;
+  onStartLesson: (subject: Subject, page: number) => void;
 }) {
+  const recommendations = getMentorRecommendations(age, profileProgress);
+  const favorite = getFavoriteInterest(profileProgress);
+  const progress = completedCount(profileProgress);
   return (
     <main>
       <AppHeader profile={profile} onProfiles={onProfiles} onHome={() => window.scrollTo({ top: 0, behavior: "smooth" })} onStart={() => onStart()} onParents={onParents} />
@@ -247,9 +259,26 @@ function Home({
         </div>
       </section>
 
+      <section className="mentor-home" aria-label={`${profile.name}'s learning path`}>
+        <div className="mentor-home-heading">
+          <div><p className="eyebrow">My learning path</p><h2>A small next step, picked for {profile.name}</h2></div>
+          <p>{favorite ? `${INTERESTS[favorite].icon} We noticed an interest in ${INTERESTS[favorite].label}. Recommendations will grow as ${profile.name} explores.` : "Try a few lessons and tap “I liked this.” ColorQuest will gently learn what sparks curiosity—without rushing or locking other topics."}</p>
+        </div>
+        <div className="mentor-path-grid">
+          {recommendations.map((item) => (
+            <article key={item.subject} className={item.subject}>
+              <span>{item.subject === "math" ? "🧮" : "🧪"}</span>
+              <div><small>{item.path} · {item.completed}/{item.total} complete</small><h3>{item.lesson.title}</h3><p>{item.reason}</p></div>
+              <button onClick={() => onStartLesson(item.subject, item.page)}>Start this step →</button>
+            </article>
+          ))}
+        </div>
+        <small className="mentor-promise">No streaks. No locked lessons. Repeat, skip, pause, or explore in any order.</small>
+      </section>
+
       <section className="learning-strip">
         <div><span>4</span><small>age-adapted worlds</small></div>
-        <div><span>6</span><small>ways to create and learn</small></div>
+        <div><span>7</span><small>ways to create and learn</small></div>
         <div><span>64</span><small>guided math & science concepts</small></div>
         <div><span>{progress}</span><small>activities completed here</small></div>
         <p>Every activity quietly builds fine-motor skills, focus, vocabulary, creativity, or problem-solving.</p>
@@ -945,6 +974,8 @@ function Studio({
   onPage,
   onHome,
   onComplete,
+  onLearningAttempt,
+  onLikeLesson,
   onParents,
   onProfiles,
   onSaveArtwork,
@@ -959,13 +990,15 @@ function Studio({
   onPage: (page: number) => void;
   onHome: () => void;
   onComplete: () => void;
+  onLearningAttempt: (subject: Subject) => void;
+  onLikeLesson: (lessonId: string, interest: InterestKey) => void;
   onParents: () => void;
   onProfiles: () => void;
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
 }) {
   const activityCount = activity === "math" || activity === "science"
     ? getLearningLessons(activity as Subject, age).length
-    : 400;
+    : activity === "lab" ? getScienceLabs(age).length : 400;
   const completedHere = profileProgress.activities[activity].completed.includes(`${age}:${page}`);
 
   return (
@@ -1002,7 +1035,7 @@ function Studio({
             </div>
             <div className="page-picker">
               <button onClick={() => onPage(page === 1 ? activityCount : page - 1)} aria-label="Previous activity">←</button>
-              <label>{activity === "math" || activity === "science" ? "Concept" : "Activity"} <input type="number" min="1" max={activityCount} value={page} onChange={(event) => onPage(Math.max(1, Math.min(activityCount, Number(event.target.value))))} /> of {activityCount}</label>
+              <label>{activity === "math" || activity === "science" ? "Concept" : activity === "lab" ? "Lab" : "Activity"} <input type="number" min="1" max={activityCount} value={page} onChange={(event) => onPage(Math.max(1, Math.min(activityCount, Number(event.target.value))))} /> of {activityCount}</label>
               <span className={`completion-marker ${completedHere ? "done" : ""}`}>{completedHere ? "✓ Done" : "In progress"}</span>
               <button onClick={() => onPage(page === activityCount ? 1 : page + 1)} aria-label="Next activity">→</button>
             </div>
@@ -1011,12 +1044,13 @@ function Studio({
           {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} />}
           {activity === "color" && <ColoringBoard key={`c-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
-          {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}`} subject={activity} page={page} age={age} onComplete={onComplete} onSelectLesson={onPage} />}
+          {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}`} subject={activity} page={page} age={age} liked={profileProgress.learning.likedLessons.includes(getLearningLessons(activity, age)[page - 1].id)} onComplete={onComplete} onAttempt={() => onLearningAttempt(activity)} onLike={onLikeLesson} onSelectLesson={onPage} />}
+          {activity === "lab" && <ScienceLabBoard key={`lab-${page}-${age}`} page={page} age={age} onComplete={onComplete} onSelectLab={onPage} />}
           {activity === "discover" && <DiscoveryBoard key={`x-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
 
           <div className="next-row">
             <div><span>🌟</span><p><strong>Creative reminder</strong><br />There is no wrong way to make art.</p></div>
-            <button className="primary-button" onClick={() => onPage(page === activityCount ? 1 : page + 1)}>Next {activity === "math" || activity === "science" ? "concept" : "activity"} →</button>
+            <button className="primary-button" onClick={() => onPage(page === activityCount ? 1 : page + 1)}>Next {activity === "math" || activity === "science" ? "concept" : activity === "lab" ? "lab" : "activity"} →</button>
           </div>
         </section>
       </div>
@@ -1062,13 +1096,15 @@ function ParentCorner({
     );
   }
   const progress = completedCount(family.progress[activeProfile.id]);
+  const favorite = getFavoriteInterest(family.progress[activeProfile.id] || emptyProgress());
+  const books = getBookSuggestions(activeProfile.age, favorite);
   return (
     <main className="parent-page">
       <AppHeader compact profile={activeProfile} onProfiles={onProfiles} onHome={onHome} onStart={onHome} onParents={() => undefined} />
       <section className="parent-dashboard">
         <p className="eyebrow">Parent corner</p>
         <h1>Creative play, without the noise.</h1>
-        <p className="parent-intro">ColorQuest keeps progress on this device. There are no child accounts, ads, social features, or outside links in the play area.</p>
+        <p className="parent-intro">ColorQuest keeps progress on this device. There are no child accounts, ads, or social features. A small set of official learning links opens only after a grown-up check.</p>
         <div className="parent-stats">
           <article><span>{progress}</span><strong>activities completed</strong><small>for {activeProfile.name}</small></article>
           <article><span>{AGE_GROUPS[age].short}</span><strong>current age world</strong><small>{AGE_GROUPS[age].skill}</small></article>
@@ -1086,7 +1122,7 @@ function ParentCorner({
                   <label>Age<input type="number" min="1" max="12" value={profile.age} onChange={(event) => onUpdateProfile({ ...profile, age: Math.max(1, Math.min(12, Number(event.target.value) || 1)) })} /></label>
                   <strong>{completedCount(childProgress)} completed</strong>
                   <small>Continue: {ACTIVITY_META[childProgress.lastActivity].title}, page {childProgress.activities[childProgress.lastActivity].lastPage}</small>
-                  <div className="progress-chips">{(["draw", "color", "puzzle", "math", "science"] as Activity[]).map((key) => <span key={key}>{ACTIVITY_META[key].icon} {childProgress.activities[key].completed.length}</span>)}</div>
+                  <div className="progress-chips">{(["draw", "color", "puzzle", "math", "science", "lab"] as Activity[]).map((key) => <span key={key}>{ACTIVITY_META[key].icon} {childProgress.activities[key].completed.length}</span>)}</div>
                   <button onClick={() => onDeleteProfile(profile.id)}>Delete profile</button>
                 </article>
               );
@@ -1099,6 +1135,12 @@ function ParentCorner({
           <article><h3>⏱️ Keep sessions light</h3><p>For young children, 10–20 minutes is plenty. The app includes natural stopping points and no streak pressure.</p></article>
           <article><h3>🎨 Process over perfection</h3><p>Coloring outside the lines is not a mistake. Experimenting is where learning happens.</p></article>
         </div>
+        <section className="book-shelf">
+          <div><p className="eyebrow">Curiosity bookshelf</p><h2>Books to continue the conversation</h2><p>{favorite ? `Suggestions begin with ${activeProfile.name}’s growing interest in ${INTERESTS[favorite].label}. Borrowing from a local library is a wonderful first choice.` : "These are age-friendly starting points. As interests emerge, the shelf will move matching books to the front."}</p></div>
+          <div className="book-grid">
+            {books.map((book) => <article key={book.title}><span>📘</span><small>Ages {book.ages}</small><h3>{book.title}</h3><strong>{book.author}</strong><p>{book.note}</p><em>Search your local library</em></article>)}
+          </div>
+        </section>
         <ArtworkGallery profiles={family.profiles} revision={artworkRevision} />
         <button className="primary-button" onClick={onHome}>Back to ColorQuest</button>
       </section>
@@ -1153,10 +1195,20 @@ export default function ColorQuestApp() {
     setFamily((current) => recordCompletion(current, activeProfile.id, activity, age, page));
   };
 
-  const start = (nextActivity: Activity = "draw", resume = false) => {
+  const learningAttempt = (subject: Subject) => {
+    if (!activeProfile) return;
+    setFamily((current) => recordLearningAttempt(current, activeProfile.id, subject, age, page));
+  };
+
+  const likeLesson = (lessonId: string, interest: InterestKey) => {
+    if (!activeProfile) return;
+    setFamily((current) => recordInterest(current, activeProfile.id, lessonId, interest));
+  };
+
+  const start = (nextActivity: Activity = "draw", resume = false, requestedPage?: number) => {
     if (!activeProfile) return;
     const nextAge = nextActivity === "discover" && age < 2 ? 2 : age;
-    const nextPage = resume ? activeProgress.activities[nextActivity].lastPage : 1;
+    const nextPage = requestedPage || (resume ? activeProgress.activities[nextActivity].lastPage : 1);
     if (nextAge !== age) setAge(nextAge);
     setActivity(nextActivity);
     setPage(nextPage);
@@ -1215,10 +1267,10 @@ export default function ColorQuestApp() {
   if (view === "profiles") return <ProfileHub profiles={family.profiles} activeProfileId={activeProfile.id} onSelect={selectProfile} onAdd={() => setView("profile-new")} onBack={() => setView("home")} />;
 
   if (view === "studio") {
-    return <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} />;
+    return <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onLikeLesson={likeLesson} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} />;
   }
   if (view === "parents") {
     return <ParentCorner family={family} activeProfile={activeProfile} age={age} artworkRevision={artworkRevision} onHome={() => setView("home")} onProfiles={() => setView("profiles")} onUpdateProfile={updateProfile} onDeleteProfile={deleteProfile} />;
   }
-  return <Home age={age} progress={completedCount(activeProgress)} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || activeProgress.activities[activeProgress.lastActivity].lastPage > 1} onAge={changeAge} onStart={start} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;
+  return <Home age={age} profileProgress={activeProgress} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || activeProgress.activities[activeProgress.lastActivity].lastPage > 1} onAge={changeAge} onStart={start} onStartLesson={(subject, lessonPage) => start(subject, false, lessonPage)} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;
 }

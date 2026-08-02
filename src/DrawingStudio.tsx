@@ -380,7 +380,13 @@ export default function DrawingStudio({
           <div className="color-tools" aria-label="Paint colors">
             {COLORS.map((swatch) => <button key={swatch} aria-label={`Choose ${swatch}`} className={`swatch ${color === swatch ? "active" : ""}`} style={{ background: swatch }} onClick={() => setColor(swatch)} />)}
           </div>
-          <label className="size-control">Stroke size<input type="range" min="3" max="36" value={size} onChange={(event) => setSize(Number(event.target.value))} /></label>
+          <div className="stroke-size-studio">
+            <span>Stroke size</span>
+            <div role="group" aria-label="Quick brush stroke sizes">
+              {([['Tiny', 4], ['Small', 8], ['Big', 18], ['Giant', 32]] as const).map(([label, value]) => <button key={label} className={Math.abs(size - value) <= 2 ? "active" : ""} onClick={() => setSize(value)} aria-label={`Use ${label.toLowerCase()} brush stroke`}>{label}<i style={{ width: Math.max(4, value / 2), height: Math.max(4, value / 2) }} /></button>)}
+            </div>
+            <label className="size-control">Fine tune<input type="range" min="3" max="36" value={size} onChange={(event) => setSize(Number(event.target.value))} /></label>
+          </div>
           <button className="tool-button" onClick={undo}>↶ Undo</button>
           <button className="tool-button" onClick={startOver}>New page</button>
           <button className="save-button" onClick={save}>Save to gallery</button>

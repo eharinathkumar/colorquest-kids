@@ -19,15 +19,33 @@ function stableShuffle<T extends { label: string }>(items: T[], seed: string) {
 
 function PuzzleHeader({ puzzle, message }: { puzzle: PuzzleDefinition; message: string }) {
   const family = puzzle.kind === "choice" ? puzzle.family : puzzle.kind;
+  const strategy = family === "match"
+    ? "Name both pictures or ideas. Ask: Do they share a home, job, change, quantity, or cause?"
+    : family === "sort"
+      ? "Say the rule for each basket before placing anything. One clear feature should explain every item in that group."
+      : family === "sequence"
+        ? "Find the beginning first. Then ask what must happen before the next step can happen."
+        : family === "pattern"
+          ? "Say the repeating rule aloud, cover the last item, and predict what the rule needs next."
+          : family === "odd"
+            ? "Describe all three. Two will share one important rule; the odd one will break it."
+            : "Underline each clue in your mind. The answer must satisfy every clue, not just one.";
   return (
-    <div className="puzzle-help varied">
-      <span aria-hidden="true">{family === "sort" ? "🧺" : family === "sequence" ? "🪜" : family === "pattern" ? "🔁" : family === "odd" ? "🕵️" : family === "clue" ? "💡" : "🧩"}</span>
-      <div>
-        <small>{FAMILY_LABELS[family]}</small>
-        <strong>{puzzle.title}</strong>
-        <p>{message}</p>
+    <>
+      <div className="puzzle-help varied">
+        <span aria-hidden="true">{family === "sort" ? "🧺" : family === "sequence" ? "🪜" : family === "pattern" ? "🔁" : family === "odd" ? "🕵️" : family === "clue" ? "💡" : "🧩"}</span>
+        <div>
+          <small>{FAMILY_LABELS[family]}</small>
+          <strong>{puzzle.title}</strong>
+          <p>{message}</p>
+        </div>
       </div>
-    </div>
+      <details className="puzzle-coach">
+        <summary>💡 Show me how to think about this</summary>
+        <p>{strategy}</p>
+        <small>The goal is to explain your rule—not to finish quickly.</small>
+      </details>
+    </>
   );
 }
 
@@ -40,7 +58,7 @@ function MatchPuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefinition,
   const tryMatch = (homeLabel: string) => {
     if (!selected) return setMessage("Choose one piece first, then choose its partner.");
     const pair = puzzle.pairs.find((entry) => entry.label === selected);
-    if (pair?.homeLabel !== homeLabel) return setMessage("Those ideas do not connect yet. Try a different partner.");
+    if (pair?.homeLabel !== homeLabel) return setMessage(`${selected} does not connect to ${homeLabel} by this puzzle's rule. Ask what ${selected} uses, becomes, equals, or belongs with.`);
     const next = [...placed, selected];
     setPlaced(next);
     setSelected(null);
@@ -90,7 +108,7 @@ function SortPuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefinition, 
   const place = (category: string) => {
     if (!selected) return setMessage("Choose an item before choosing a category.");
     const item = puzzle.items.find((entry) => entry.id === selected)!;
-    if (item.category !== category) return setMessage(`Think about the rule for “${category}.” Does ${item.label} really fit it?`);
+    if (item.category !== category) return setMessage(`“${category}” means every item must share that feature. Describe ${item.label}: does it have that feature, or the other one?`);
     const next = { ...placed, [item.id]: category };
     setPlaced(next);
     setSelected(null);
@@ -128,7 +146,7 @@ function SequencePuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefiniti
 
   const choose = (label: string) => {
     const expected = puzzle.steps[chosen.length];
-    if (label !== expected.label) return setMessage("That step belongs later. Look for what must happen first.");
+    if (label !== expected.label) return setMessage(`${label} belongs later. Before it can happen, the sequence needs ${expected.label}. Look for cause, time, or what the next step requires.`);
     const next = [...chosen, label];
     setChosen(next);
     setMessage(next.length === puzzle.steps.length ? "The whole sequence makes sense from beginning to end." : `Yes. Now what must happen after ${label}?`);
@@ -181,7 +199,7 @@ function ChoicePuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefinition
             </button>
           ))}
         </div>
-        {choice && <p className={correct ? "choice-feedback correct" : "choice-feedback"} role="status">{correct ? puzzle.explanation : "That choice does not satisfy the full rule. Compare all three again."}</p>}
+        {choice && <p className={correct ? "choice-feedback correct" : "choice-feedback"} role="status">{correct ? puzzle.explanation : `Good try. “${choice}” misses part of the rule. Describe each option, then choose the one that satisfies every clue.`}</p>}
       </section>
       {correct && <div className="success-toast">Solved with reasoning—not guessing. ⭐</div>}
     </>

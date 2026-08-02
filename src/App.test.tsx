@@ -7,6 +7,8 @@ import { Share } from "@capacitor/share";
 import ColorQuestApp from "./App";
 import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
 import { getLearningLesson, getLearningLessons, LEARNING_COUNTS } from "./learning-data";
+import { getScienceLabs, LAB_COUNTS } from "./lab-data";
+import { getFavoriteInterest, getLessonGuide, getMentorRecommendations } from "./mentor-data";
 import { buildPuzzle, PUZZLE_FAMILIES } from "./puzzle-data";
 import { emptyProgress, PROFILE_STORAGE_KEY, recordCompletion, recordLocation, type FamilyData } from "./profile-data";
 
@@ -50,7 +52,7 @@ const canvasContext = {
 
 beforeEach(() => {
   const family: FamilyData = {
-    version: 2,
+    version: 3,
     profiles: [{ id: "profile-test", name: "Maya", age: 6, avatar: "🦊", createdAt: "2026-08-02T00:00:00.000Z" }],
     activeProfileId: "profile-test",
     progress: { "profile-test": emptyProgress() },
@@ -175,7 +177,7 @@ describe("Private child profiles and pacing", () => {
 
   it("records resume locations and unique completion separately", () => {
     const family: FamilyData = {
-      version: 2,
+      version: 3,
       profiles: [{ id: "one", name: "One", age: 8, avatar: "🚀", createdAt: "now" }],
       activeProfileId: "one",
       progress: { one: emptyProgress() },
@@ -287,5 +289,60 @@ describe("Math and science learning trails", () => {
     expect(screen.getByRole("heading", { name: lesson.title })).toBeTruthy();
     expect(screen.getByText(lesson.explanation)).toBeTruthy();
     expect(screen.getByText("Concept 1 of 8")).toBeTruthy();
+  });
+
+  it("adds another explanation, a concept story, and remembers a child's interest", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await user.click(screen.getByRole("button", { name: /ScienceAsk, observe, explain/ }));
+
+    await user.click(screen.getByRole("button", { name: "Explain it another way" }));
+    expect(screen.getByText("Let’s unpack it")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /Play concept story/ }));
+    expect(screen.getByText(/Wonder · 1 of 4/)).toBeTruthy();
+
+    const lesson = getLearningLesson("science", 1, 1);
+    await user.click(screen.getByRole("button", { name: lesson.answer }));
+    await user.click(screen.getByRole("button", { name: /I liked this—show me more/ }));
+    await waitFor(() => {
+      const saved = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
+      expect(saved.progress["profile-test"].learning.likedLessons).toContain(lesson.id);
+      expect(getFavoriteInterest(saved.progress["profile-test"])).not.toBeNull();
+    });
+  });
+});
+
+describe("Science Lab and mentor paths", () => {
+  it("contains eight distinct, safety-labelled investigations per age world", () => {
+    expect(LAB_COUNTS.total).toBe(32);
+    for (const age of [0, 1, 2, 3]) {
+      const labs = getScienceLabs(age);
+      expect(labs).toHaveLength(8);
+      expect(new Set(labs.map((lab) => lab.id)).size).toBe(8);
+      expect(labs.every((lab) => ["Child can try", "Grown-up nearby", "Grown-up required"].includes(lab.safety))).toBe(true);
+      expect(labs.every((lab) => lab.steps.length >= 3 && lab.explanation && lab.wonder)).toBe(true);
+    }
+  });
+
+  it("requires prediction and safe steps before revealing a lab explanation", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await user.click(screen.getByRole("button", { name: /Science LabPredict, test safely, explain/ }));
+    const lab = getScienceLabs(1)[0];
+    const reveal = screen.getByRole("button", { name: "Reveal the science" });
+    expect(reveal.hasAttribute("disabled")).toBe(true);
+    await user.click(screen.getByRole("button", { name: lab.predictions[0] }));
+    for (const checkbox of screen.getAllByRole("checkbox")) await user.click(checkbox);
+    expect(reveal.hasAttribute("disabled")).toBe(false);
+    await user.click(reveal);
+    expect(screen.getByText(lab.explanation)).toBeTruthy();
+  });
+
+  it("builds one next-step recommendation for each subject", () => {
+    const progress = emptyProgress();
+    const recommendations = getMentorRecommendations(2, progress);
+    expect(recommendations.map((item) => item.subject)).toEqual(["math", "science"]);
+    expect(recommendations.every((item) => item.path && item.page === 1)).toBe(true);
+    expect(getLessonGuide(recommendations[0].lesson, "math", 2).slides).toHaveLength(4);
   });
 });
