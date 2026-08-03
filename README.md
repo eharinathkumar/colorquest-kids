@@ -1,6 +1,39 @@
 # ColorQuest Kids
 
-ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, alignment puzzles, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
+ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, varied reasoning puzzles, guided Math and Science trails, hands-on Science Labs, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
+
+## New in version 2.0 — the Mentor update
+
+- A gentle on-device mentor recommends one small next Math step and one Science step without locking other content
+- Eight interest signals—numbers, patterns, building, animals, Earth, space, experiments, and stories—grow only when a child chooses **I liked this**
+- Named learning paths such as Number Explorer, Shape Architect, Living World Explorer, Experiment Detective, and Space Explorer
+- Every Math and Science lesson now includes **Explain it another way**, a visual four-part concept story, a better wrong-answer hint, real-world meaning, and reflection
+- 32 hands-on Science Labs: eight carefully written investigations for each age world
+- Every lab follows ask → predict → test safely → observe → explain → wonder and has a **Child can try**, **Grown-up nearby**, or **Grown-up required** label
+- Puzzle coaching now explains the thinking rule for matching, sorting, sequencing, patterns, odd-one-out, and clues
+- Curated NASA, NOAA, and PhET learning resources protected by a grown-up check; core lessons remain available offline
+- An age- and interest-aware Parent Corner bookshelf with four suggestions and a library-first message
+- Drawing Studio brush-size presets: Tiny, Small, Big, and Giant, plus fine adjustment
+- Private profile storage migrates automatically from v1.2; existing progress and artwork remain on the device
+
+## Version 1.2 foundations
+
+- Multiple private child profiles with nickname, age, avatar, and age-based starting world
+- Separate completion history and resume position for every profile and activity
+- Children can repeat, skip, or revisit content without streaks or locked lessons
+- Redesigned Drawing Studio with eight brush styles, six base paints, and eight editable shapes
+- Shapes can be moved, resized, rotated, copied, recolored, and removed independently from brush strokes
+- On-device artwork gallery protected by Parent Corner
+- Parent-controlled high-resolution PNG download, Android share sheet, printing, and deletion
+- Existing v1.1 progress is carried into the first profile created after upgrading
+
+## Learning introduced in version 1.1
+
+- Six rotating puzzle formats: matching, sorting, sequencing, patterns, odd-one-out, and clue solving
+- Different puzzle content and reasoning language for ages 1–3, 4–6, 7–9, and 10–12
+- Eight guided Math concepts and eight guided Science concepts in every age world—64 lessons total
+- Every lesson includes a plain-language big idea, worked example, interactive question, explanation, vocabulary, and an off-screen activity
+- Age progression from counting, shapes, senses, and living things to fractions, algebra, forces, atoms, DNA, energy, and the universe
 
 ## GitHub Pages launch
 
@@ -20,10 +53,10 @@ npm install
 npm run dev
 ```
 
-Production check:
+Production check (tests plus builds):
 
 ```bash
-npm run build
+npm run check
 ```
 
-Kid-created progress stays in the browser on that device. No child account is required.
+Profiles, progress, and saved artwork stay on that device. No email address, cloud account, or full birthday is required. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
