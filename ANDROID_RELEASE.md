@@ -2,7 +2,7 @@
 
 The Android project wraps the same tested ColorQuest experience and bundles its web files inside the application. It does not load the GitHub Pages site as its main screen.
 
-Release target: **ColorQuest Kids 2.2**, `versionCode` **5**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
+Release target: **ColorQuest Kids 2.3**, `versionCode` **6**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
 
 ## What is ready
 
@@ -14,6 +14,7 @@ Release target: **ColorQuest Kids 2.2**, `versionCode` **5**. Google Play requir
 - Self-paced resume points with no streaks, deadlines, or locked lesson path
 - Layered Drawing Studio with eight brushes, six base paints, and movable/editable vector shapes
 - Fifi's in-app autosave/start-over guide replaces browser-origin confirmation alerts and works as a mobile bottom sheet
+- Fifi now hops in, speaks through a comic callout, and animates his mouth while his age-aware character voice is active
 - Age-aware narration, selectable English voices, and expanded puzzle/lab/Discovery read-aloud coverage
 - Private on-device artwork gallery with parent-controlled Android share/export
 - Six varied puzzle mechanics with age-specific content: matching, sorting, sequencing, patterns, odd-one-out, and clue solving

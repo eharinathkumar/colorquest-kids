@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { SpeakButton } from "./SpeechProvider";
+import { SpeakButton, useSpeech } from "./SpeechProvider";
 import "./FifiGuide.css";
 
 type SharedGuideProps = {
@@ -17,6 +17,8 @@ type SharedGuideProps = {
   mascotSrc?: string;
   childName?: string;
   className?: string;
+  /** Speak the greeting automatically only when the parent's auto-read setting allows it. */
+  autoGreet?: boolean;
 };
 
 export type FifiGuideProps = SharedGuideProps & (
@@ -71,20 +73,21 @@ function copyFor(props: FifiGuideProps): GuideCopy {
   return { title, message: props.message, listenText: `${title}. ${props.message}` };
 }
 
-function FifiMascot({ src }: { src?: string }) {
+function FifiMascot({ src, talking }: { src?: string; talking: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => setImageFailed(false), [src]);
 
   if (src && !imageFailed) {
-    return (
+    return <>
       <img
-        className="fifi-mascot-image"
-        src={src}
-        alt="Fifi, your ColorQuest guide"
-        onError={() => setImageFailed(true)}
-      />
-    );
+          className="fifi-mascot-image"
+          src={src}
+          alt="Fifi, your ColorQuest guide"
+          onError={() => setImageFailed(true)}
+        />
+      <span className={`fifi-mouth ${talking ? "fifi-mouth-talking" : ""}`} aria-hidden="true" />
+    </>;
   }
 
   return (
@@ -121,7 +124,7 @@ function GuideButton({
  * without first dismissing it.
  */
 export default function FifiGuide(props: FifiGuideProps) {
-  const { open, mascotSrc, className = "" } = props;
+  const { open, mascotSrc, className = "", autoGreet = false } = props;
   const copy = copyFor(props);
   const rawId = useId();
   const stableId = rawId.replace(/[^a-zA-Z0-9_-]/g, "");
@@ -132,6 +135,9 @@ export default function FifiGuide(props: FifiGuideProps) {
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const safeCloseRef = useRef<() => void>(() => undefined);
   const blocking = props.mode !== "tip";
+  const speechId = `fifi-${props.mode}-${stableId}`;
+  const { autoRead, say, speakingId, stop } = useSpeech();
+  const talking = speakingId === speechId;
 
   safeCloseRef.current = props.mode === "leave-drawing"
     ? props.onStay
@@ -186,15 +192,28 @@ export default function FifiGuide(props: FifiGuideProps) {
     };
   }, [blocking, open]);
 
+  // Fifi gives one short spoken greeting when a parent's auto-read setting is
+  // active. The same speech id drives the mouth pose and the manual Listen
+  // button, so both paths stay visually synchronized.
+  useEffect(() => {
+    if (!open || !autoGreet || !autoRead) return undefined;
+    const timer = window.setTimeout(() => say(copy.listenText, { id: speechId, style: "fifi" }), 520);
+    return () => {
+      window.clearTimeout(timer);
+      stop();
+    };
+  }, [open, autoGreet, autoRead, copy.listenText, say, speechId, stop]);
+
   if (!open || typeof document === "undefined") return null;
 
-  const mascot = <FifiMascot src={mascotSrc} />;
+  const mascot = <FifiMascot src={mascotSrc} talking={talking} />;
   const listen = (
     <SpeakButton
-      id={`fifi-${props.mode}-${stableId}`}
+      id={speechId}
       text={copy.listenText}
       label="Hear Fifi"
       className="fifi-listen"
+      voiceStyle="fifi"
     />
   );
 
@@ -208,8 +227,8 @@ export default function FifiGuide(props: FifiGuideProps) {
         aria-atomic="true"
       >
         <div className="fifi-tip">
-          <div className="fifi-mascot fifi-mascot-small">{mascot}</div>
-          <div className="fifi-tip-copy">
+          <div className={`fifi-mascot fifi-mascot-small ${talking ? "fifi-is-talking" : ""}`}>{mascot}</div>
+          <div className="fifi-tip-copy fifi-speech-bubble">
             <strong>{copy.title}</strong>
             <p>{copy.message}</p>
             <div className="fifi-tip-actions">
@@ -251,8 +270,8 @@ export default function FifiGuide(props: FifiGuideProps) {
         aria-describedby={descriptionId}
         tabIndex={-1}
       >
-        <div className="fifi-mascot" aria-hidden="true">{mascot}</div>
-        <div className="fifi-dialog-copy">
+        <div className={`fifi-mascot ${talking ? "fifi-is-talking" : ""}`} aria-hidden="true">{mascot}</div>
+        <div className="fifi-dialog-copy fifi-speech-bubble">
           <p className="fifi-kicker">Fifi says</p>
           <h2 id={titleId}>{copy.title}</h2>
           <p id={descriptionId}>{copy.message}</p>

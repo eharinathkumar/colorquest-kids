@@ -5,6 +5,12 @@ import FifiGuide from "./FifiGuide";
 
 vi.mock("./SpeechProvider", () => ({
   SpeakButton: ({ label }: { label: string }) => <button type="button">{label}</button>,
+  useSpeech: () => ({
+    autoRead: false,
+    say: vi.fn(),
+    speakingId: null,
+    stop: vi.fn(),
+  }),
 }));
 
 describe("FifiGuide", () => {
@@ -71,5 +77,14 @@ describe("FifiGuide", () => {
     render(<FifiGuide open mode="tip" mascotSrc="/fifi-mascot.png" message="Hello!" onDismiss={() => undefined} />);
     fireEvent.error(screen.getByAltText("Fifi, your ColorQuest guide"));
     expect(screen.getByRole("img", { name: "Fifi, your ColorQuest guide" })).toBeTruthy();
+  });
+
+  it("renders Fifi's comic speech bubble and mouth animation layer", () => {
+    const { container } = render(
+      <FifiGuide open mode="tip" mascotSrc="/fifi-mascot.png" message="Hello, explorer!" onDismiss={() => undefined} />,
+    );
+    expect(document.body.querySelector(".fifi-speech-bubble")).toBeTruthy();
+    expect(document.body.querySelector(".fifi-mouth")).toBeTruthy();
+    expect(container).toBeTruthy();
   });
 });

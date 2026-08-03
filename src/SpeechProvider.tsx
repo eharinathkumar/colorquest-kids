@@ -18,6 +18,8 @@ type SayOptions = {
   /** Stable control id; only this control shows the stop state. */
   id?: string;
   onDone?: () => void;
+  /** Fifi gets a brighter character delivery without changing lesson voices. */
+  style?: "default" | "fifi";
 };
 
 export type SpeechVoiceOption = SpeechVoicePreference & {
@@ -101,9 +103,10 @@ export function SpeechProvider({ ageWorld, children }: { ageWorld: number; child
     const request = ++requestRef.current;
     setSpeakingId(options.id || null);
     const profile = voiceProfileForAge(settings, ageWorld);
+    const fifiStyle = options.style === "fifi";
     const started = speak(text, {
-      rate: profile.rate,
-      pitch: profile.pitch,
+      rate: fifiStyle ? Math.max(0.58, profile.rate - 0.03) : profile.rate,
+      pitch: fifiStyle ? Math.min(1.3, profile.pitch + (ageWorld <= 1 ? 0.12 : 0.08)) : profile.pitch,
       voice: selectedNativeVoice,
       onDone: () => {
         if (requestRef.current !== request) return;
@@ -173,11 +176,13 @@ export function SpeakButton({
   id,
   label = "Listen",
   className = "",
+  voiceStyle = "default",
 }: {
   text: Array<string | undefined | null> | string;
   id: string;
   label?: string;
   className?: string;
+  voiceStyle?: "default" | "fifi";
 }) {
   const { available, say, stop, speakingId } = useSpeech();
   const spoken = useMemo(() => (Array.isArray(text) ? joinForSpeech(...text) : joinForSpeech(text)), [text]);
@@ -192,7 +197,7 @@ export function SpeakButton({
     }
     // `say` owns both the native utterance and the visual state. If a WebView
     // rejects speech synchronously or never begins, it clears the button again.
-    say(spoken, { id });
+    say(spoken, { id, style: voiceStyle });
   };
 
   return (

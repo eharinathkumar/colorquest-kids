@@ -47,6 +47,7 @@
 }
 
 .fifi-mascot {
+  position: relative;
   display: grid;
   place-items: center;
   align-self: start;
@@ -57,6 +58,7 @@
   border-radius: 42% 58% 48% 52%;
   box-shadow: 0 9px 20px rgb(59 53 117 / 16%);
   transform: rotate(-3deg);
+  animation: fifi-mascot-hop 720ms cubic-bezier(.22, .9, .3, 1.18) 90ms both;
 }
 
 .fifi-mascot-image {
@@ -65,6 +67,45 @@
   height: 100%;
   object-fit: contain;
   border-radius: inherit;
+}
+
+/* The original raster stays untouched. This tiny overlay covers only Fifi's
+   painted smile while speech is active, giving a crisp two-pose mouth cycle. */
+.fifi-mouth {
+  position: absolute;
+  z-index: 2;
+  left: 43%;
+  top: 58.4%;
+  width: 6.8%;
+  height: 5%;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #102b65;
+  border: 1px solid #102b65;
+  border-radius: 48% 48% 54% 54%;
+  box-shadow: 0 0 0 2px #fff0c7;
+  transform: scaleY(.25);
+  transform-origin: center top;
+}
+
+.fifi-mouth::after {
+  content: "";
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: -2%;
+  height: 38%;
+  background: #ff746e;
+  border-radius: 50% 50% 30% 30%;
+}
+
+.fifi-mouth-talking {
+  animation: fifi-mouth-talk 260ms steps(1, end) infinite;
+}
+
+.fifi-is-talking {
+  animation: fifi-talk-bob 620ms ease-in-out infinite;
 }
 
 .fifi-mascot-placeholder {
@@ -97,6 +138,29 @@
   margin: 12px 0 15px;
   font-size: 1.02rem;
   line-height: 1.55;
+}
+
+.fifi-speech-bubble {
+  position: relative;
+  padding: 17px 18px;
+  background: #fff;
+  border: 2px solid #dce5f0;
+  border-radius: 22px 22px 22px 10px;
+  box-shadow: 0 8px 20px rgb(42 66 105 / 12%);
+}
+
+.fifi-speech-bubble::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 30px;
+  width: 17px;
+  height: 17px;
+  background: #fff;
+  border-left: 2px solid #dce5f0;
+  border-bottom: 2px solid #dce5f0;
+  border-radius: 0 0 0 4px;
+  transform: rotate(45deg);
 }
 
 .fifi-listen.speak-button {
@@ -167,15 +231,15 @@
 .fifi-tip {
   position: relative;
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr) 32px;
+  grid-template-columns: 74px minmax(0, 1fr);
   gap: 13px;
   align-items: start;
-  padding: 14px;
+  padding: 4px;
   color: var(--fifi-ink);
-  background: rgb(255 250 240 / 97%);
-  border: 3px solid #fff;
+  background: transparent;
+  border: 0;
   border-radius: 22px;
-  box-shadow: 0 15px 40px rgb(7 24 52 / 24%);
+  box-shadow: none;
   pointer-events: auto;
   animation: fifi-tip-in 260ms cubic-bezier(.2, .9, .3, 1.2);
 }
@@ -193,6 +257,18 @@
   padding-right: 3px;
   font-size: 1.02rem;
   line-height: 1.25;
+}
+
+.fifi-tip-copy.fifi-speech-bubble {
+  padding: 15px 42px 15px 16px;
+  border-color: #fff;
+  border-radius: 22px 22px 22px 8px;
+  box-shadow: 0 15px 40px rgb(7 24 52 / 24%);
+}
+
+.fifi-tip-copy.fifi-speech-bubble::before {
+  top: 24px;
+  border-color: #fff;
 }
 
 .fifi-tip-copy p {
@@ -216,6 +292,10 @@
 }
 
 .fifi-tip-close {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 11px;
   display: grid;
   place-items: center;
   width: 32px;
@@ -240,8 +320,27 @@
 }
 
 @keyframes fifi-tip-in {
-  from { opacity: 0; transform: translateY(14px) scale(.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  0% { opacity: 0; transform: translate(90px, 28px) rotate(7deg) scale(.72); }
+  48% { opacity: 1; transform: translate(-10px, -15px) rotate(-3deg) scale(1.04); }
+  72% { transform: translate(5px, 3px) rotate(1deg) scale(.98); }
+  100% { opacity: 1; transform: translate(0) rotate(0) scale(1); }
+}
+
+@keyframes fifi-mascot-hop {
+  0% { opacity: 0; transform: translateY(28px) rotate(10deg) scale(.68); }
+  48% { opacity: 1; transform: translateY(-13px) rotate(-7deg) scale(1.08); }
+  72% { transform: translateY(4px) rotate(2deg) scale(.97); }
+  100% { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1); }
+}
+
+@keyframes fifi-talk-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+}
+
+@keyframes fifi-mouth-talk {
+  0%, 100% { opacity: 0; transform: scaleY(.2); }
+  50% { opacity: 1; transform: scaleY(1); }
 }
 
 @media (max-width: 640px) {
@@ -299,10 +398,11 @@
   .fifi-layer,
   .fifi-dialog,
   .fifi-tip,
+  .fifi-mascot,
+  .fifi-mouth,
   .fifi-button {
     animation: none !important;
     scroll-behavior: auto !important;
     transition: none !important;
   }
 }
-

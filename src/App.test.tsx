@@ -86,6 +86,13 @@ async function passGrownUpGate(user: ReturnType<typeof userEvent.setup>, confirm
 }
 
 describe("ColorQuest core journeys", () => {
+  it("greets the active child with Fifi's age-aware speech bubble", () => {
+    render(<ColorQuestApp />);
+    expect(screen.getByRole("note", { name: "Fifi's tip" })).toBeTruthy();
+    expect(screen.getByText("Hi Maya! Fifi just hopped in.")).toBeTruthy();
+    expect(screen.getByText(/Ready to draw, count, wonder/)).toBeTruthy();
+  });
+
   it("opens the drawing studio from the home page", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);

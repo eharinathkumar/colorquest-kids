@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "colorquest-";
-const VERSION = `${CACHE_PREFIX}v2.2`;
+const VERSION = `${CACHE_PREFIX}v2.3`;
 const BASE = self.registration.scope;
 const SHELL = [
   BASE,

@@ -176,6 +176,28 @@ function Home({
   const recommendations = getMentorRecommendations(age, profileProgress);
   const favorite = getFavoriteInterest(profileProgress);
   const progress = completedCount(profileProgress);
+  const welcomeKey = `colorquest-fifi-welcome-v1:${profile.id}`;
+  const [fifiWelcomeOpen, setFifiWelcomeOpen] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(welcomeKey) !== "seen";
+    } catch {
+      return true;
+    }
+  });
+  const welcomeMessages = [
+    "I brought colors, shapes, and a tiny idea just for you. What should we make first?",
+    "Ready to draw, count, wonder, and make something nobody has imagined before?",
+    "Your next idea could begin with art, a puzzle, a number, or a science question. You choose the path!",
+    "Bring your boldest question. We can turn it into a design, an experiment, or a whole new world.",
+  ];
+  const dismissWelcome = () => {
+    try {
+      window.sessionStorage.setItem(welcomeKey, "seen");
+    } catch {
+      /* A private browser can still dismiss Fifi for this render. */
+    }
+    setFifiWelcomeOpen(false);
+  };
   return (
     <main>
       <AppHeader profile={profile} onProfiles={onProfiles} onHome={() => window.scrollTo({ top: 0, behavior: "smooth" })} onStart={() => onStart()} onParents={onParents} />
@@ -285,6 +307,17 @@ function Home({
         <p>Made for curious kids and the grown-ups who cheer them on.</p>
         <button onClick={onParents}>Parent corner</button>
       </footer>
+
+      <FifiGuide
+        open={fifiWelcomeOpen}
+        mode="tip"
+        autoGreet
+        childName={profile.name}
+        mascotSrc={`${import.meta.env.BASE_URL}mascot/fifi-color-spark.png`}
+        title={`Hi ${profile.name}! Fifi just hopped in.`}
+        message={welcomeMessages[age]}
+        onDismiss={dismissWelcome}
+      />
     </main>
   );
 }

@@ -1,12 +1,12 @@
 # ColorQuest Kids test report
 
 Date: August 3, 2026  
-Build target: Android 2.2 (`versionCode` 5)  
+Build target: Android 2.3 (`versionCode` 6)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
 
-**PASS — 44 of 44 automated tests across four test files.** The fully integrated source passed `npm run check` on August 3, 2026: TypeScript compilation completed and both the GitHub Pages and Android-targeted Vite builds succeeded. `npm audit --omit=dev` reported **0 vulnerabilities**, and `npm run android:sync` copied the final Android build and Fifi mascot into the native project without errors.
+**PASS — 46 of 46 automated tests across four test files.** The fully integrated source passed `npm run check` on August 3, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after every 2.3 source change.
 
 Coverage includes:
 
@@ -47,10 +47,12 @@ Coverage includes:
 - Fifi's drawing-exit, start-over, tip, focus-management, and image-fallback behavior
 - Dirty drawings route through Fifi instead of a browser-origin confirmation alert
 - Age-aware voice selection, local/remote metadata, stale-callback recovery, and narration coverage for puzzles and labs
+- Fifi's comic speech bubble and talking-mouth layer render with his local mascot art
+- The active child receives one age-aware Fifi welcome per app session
 
 ## Reproduce the automated run
 
-Run these commands after all v2.2 work is integrated:
+Run these commands after all v2.3 work is integrated:
 
 ```bash
 npm ci
@@ -74,8 +76,8 @@ The final verification found no `.map` files in either `dist/` or the synchroniz
 - Parent-gated artwork export uses an app-private cache file and Android system share sheet
 - Production source-map generation disabled in Vite
 - Release R8 minification and Android resource shrinking enabled
-- Version set to 2.2 / code 5
-- Offline cache namespace set to v2.2, with forced asset revalidation and no third-party/runtime response caching
+- Version set to 2.3 / code 6
+- Offline cache namespace set to v2.3, with forced asset revalidation and no third-party/runtime response caching
 
 ## Remaining release and physical-device checks
 

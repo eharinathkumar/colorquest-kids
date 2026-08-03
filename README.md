@@ -2,7 +2,15 @@
 
 ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, varied reasoning puzzles, guided Math and Science trails, hands-on Science Labs, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
 
-## New in version 2.2 — the quality and guidance update
+## New in version 2.3 — Fifi comes alive
+
+- Fifi hops into view with a playful, short greeting animation instead of sitting still
+- Comic-style speech bubbles point from Fifi to the words he is sharing
+- A lightweight two-pose mouth animation runs only while Fifi is speaking
+- Fifi uses a brighter character pitch and gentler pace while lesson narration keeps its natural age-aware delivery
+- Automatic spoken greetings follow the parent&apos;s existing read-aloud setting; reduced-motion preferences disable bouncing
+
+## Version 2.2 — the quality and guidance update
 
 - Fifi, an original ColorQuest “Color Spark,” replaces the browser-origin drawing alert with friendly, accessible autosave and start-over guidance
 - Every drawing exit—including the header, profile switcher, Parent Corner, age/activity controls, arrows, and page picker—uses the same safe Fifi flow
