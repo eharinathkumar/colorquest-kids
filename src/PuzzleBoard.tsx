@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { buildPuzzle, type PuzzleDefinition } from "./puzzle-data";
+import { SpeakButton, useAutoSpeak, useSpeakOnChange } from "./SpeechProvider";
 
 const FAMILY_LABELS = {
   match: "Partner match",
@@ -30,6 +31,9 @@ function PuzzleHeader({ puzzle, message }: { puzzle: PuzzleDefinition; message: 
           : family === "odd"
             ? "Describe all three. Two will share one important rule; the odd one will break it."
             : "Underline each clue in your mind. The answer must satisfy every clue, not just one.";
+  // The running message is the coaching. Spoken as soon as it changes.
+  useSpeakOnChange(message);
+
   return (
     <>
       <div className="puzzle-help varied">
@@ -39,6 +43,7 @@ function PuzzleHeader({ puzzle, message }: { puzzle: PuzzleDefinition; message: 
           <strong>{puzzle.title}</strong>
           <p>{message}</p>
         </div>
+        <SpeakButton id={`puzzle-${puzzle.id}`} label="Read puzzle" text={[puzzle.title, message, strategy]} />
       </div>
       <details className="puzzle-coach">
         <summary>💡 Show me how to think about this</summary>
@@ -191,7 +196,14 @@ function ChoicePuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefinition
     <>
       <PuzzleHeader puzzle={puzzle} message={puzzle.instruction} />
       <section className="choice-puzzle">
-        <h3>{puzzle.prompt}</h3>
+        <div className="choice-prompt-head">
+          <h3>{puzzle.prompt}</h3>
+          <SpeakButton
+            id={`choice-${puzzle.id}`}
+            label="Hear it"
+            text={[puzzle.prompt, `Your choices are: ${puzzle.options.map((option) => option.label).join(", ")}`]}
+          />
+        </div>
         <div>
           {puzzle.options.map((option) => (
             <button key={option.label} onClick={() => choose(option.label)} className={choice === option.label ? (option.label === puzzle.answer ? "correct" : "incorrect") : ""}>
@@ -208,6 +220,7 @@ function ChoicePuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefinition
 
 export default function PuzzleBoard({ page, age, onComplete }: { page: number; age: number; onComplete: () => void }) {
   const puzzle = buildPuzzle(page, age);
+  useAutoSpeak([puzzle.title, puzzle.instruction], puzzle.id);
   return (
     <div className="creative-board puzzle-board varied-puzzle">
       {puzzle.kind === "match" && <MatchPuzzle puzzle={puzzle} onComplete={onComplete} />}

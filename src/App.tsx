@@ -21,6 +21,11 @@ import VariedPuzzleBoard from "./PuzzleBoard";
 import { addArtwork } from "./artwork-store";
 import { getLearningLessons, type Subject } from "./learning-data";
 import { getScienceLabs } from "./lab-data";
+import { activityCount, activityUnit, COLORING_SCENE_COUNT } from "./content-counts";
+import { artCredit, DiscoveryArt } from "./discovery-art";
+import { GrownUpGate } from "./GrownUpGate";
+import { SpeakButton, SpeechProvider, useAutoSpeak, useSpeech } from "./SpeechProvider";
+import { isSpeechSupported, speak } from "./speech";
 import { getBookSuggestions, getFavoriteInterest, getMentorRecommendations, INTERESTS } from "./mentor-data";
 import {
   ageWorldFor,
@@ -79,7 +84,7 @@ const AGE_GROUPS = [
 
 const ACTIVITY_META: Record<Activity, { icon: string; title: string; copy: string }> = {
   draw: { icon: "✏️", title: "Draw", copy: "A blank canvas for every idea" },
-  color: { icon: "🎨", title: "Color", copy: "400 pages for every age" },
+  color: { icon: "🎨", title: "Color", copy: `${COLORING_SCENE_COUNT} scenes to fill with color` },
   puzzle: { icon: "🧩", title: "Build puzzles", copy: "Match, sort, sequence, reason" },
   math: { icon: "🧮", title: "Math", copy: "Big ideas made visible" },
   science: { icon: "🧪", title: "Science", copy: "Ask, observe, explain" },
@@ -88,8 +93,6 @@ const ACTIVITY_META: Record<Activity, { icon: string; title: string; copy: strin
 };
 
 const COLORS = ["#ff604f", "#ffd65a", "#24bca4", "#55aaf5", "#7857d6", "#f58bbb", "#173b6d", "#ffffff"];
-const PROMPT_NOUNS = ["kind robot", "dream treehouse", "underwater city", "space garden", "friendly dragon", "future vehicle", "tiny world", "weather machine"];
-const PROMPT_ACTIONS = ["invent", "imagine", "design", "draw", "remix", "discover"];
 const FACTS = [
   "Elephants use their trunks to smell, drink, and say hello.",
   "A rainbow is sunlight separated into many colors.",
@@ -113,28 +116,6 @@ const OLDER_FACTS = [
   "Galaxies are enormous groups of stars, planets, gas, and dust held together by gravity.",
   "Glaciers are rivers of ice that move slowly and reshape entire landscapes.",
 ];
-
-const OLDER_DRAW_PROMPTS = [
-  "Draw the final page of an astronaut’s travel journal from an unknown moon",
-  "Invent a landscape where mountains float and rivers climb uphill",
-  "Design a research station that could survive in Antarctica",
-  "Map an island with three climates and one unsolved mystery",
-  "Illustrate a city built inside a canyon without harming the canyon",
-  "Imagine the first garden grown on Mars",
-  "Draw Earth as seen by a tiny robot traveling beyond Neptune",
-  "Design an animal perfectly adapted to a desert that rains once a year",
-  "Create a new constellation and tell the story behind its shape",
-  "Draw a vehicle that can travel through ocean, desert, and space",
-  "Turn a mathematical spiral into a living landscape",
-  "Illustrate a message you would send to another civilization",
-];
-
-function promptFor(page: number, age: number) {
-  if (age >= 2) return OLDER_DRAW_PROMPTS[(page * 5 + age) % OLDER_DRAW_PROMPTS.length];
-  const verb = PROMPT_ACTIONS[(page + age) % PROMPT_ACTIONS.length];
-  const noun = PROMPT_NOUNS[(page * 3 + age) % PROMPT_NOUNS.length];
-  return `${verb[0].toUpperCase()}${verb.slice(1)} a ${noun}`;
-}
 
 function AppHeader({
   compact = false,
@@ -279,7 +260,8 @@ function Home({
       <section className="learning-strip">
         <div><span>4</span><small>age-adapted worlds</small></div>
         <div><span>7</span><small>ways to create and learn</small></div>
-        <div><span>64</span><small>guided math & science concepts</small></div>
+        <div><span>64</span><small>guided math &amp; science concepts</small></div>
+        <div><span>32</span><small>hands-on science labs</small></div>
         <div><span>{progress}</span><small>activities completed here</small></div>
         <p>Every activity quietly builds fine-motor skills, focus, vocabulary, creativity, or problem-solving.</p>
       </section>
@@ -303,238 +285,6 @@ function Home({
         <button onClick={onParents}>Parent corner</button>
       </footer>
     </main>
-  );
-}
-
-type StampShape = "circle" | "square" | "triangle" | "diamond" | "star" | "heart";
-
-const STAMP_SHAPES: Array<{ shape: StampShape; icon: string; label: string }> = [
-  { shape: "circle", icon: "●", label: "Circle" },
-  { shape: "square", icon: "■", label: "Square" },
-  { shape: "triangle", icon: "▲", label: "Triangle" },
-  { shape: "diamond", icon: "◆", label: "Diamond" },
-  { shape: "star", icon: "★", label: "Star" },
-  { shape: "heart", icon: "♥", label: "Heart" },
-];
-
-function drawStamp(
-  ctx: CanvasRenderingContext2D,
-  shape: StampShape,
-  x: number,
-  y: number,
-  radius: number,
-  color: string,
-) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.fillStyle = color;
-  ctx.strokeStyle = color === "#ffffff" ? "#9aabba" : color;
-  ctx.lineWidth = 3;
-
-  if (shape === "circle") {
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-  } else if (shape === "square") {
-    ctx.rect(x - radius, y - radius, radius * 2, radius * 2);
-  } else if (shape === "triangle") {
-    ctx.moveTo(x, y - radius);
-    ctx.lineTo(x + radius, y + radius);
-    ctx.lineTo(x - radius, y + radius);
-    ctx.closePath();
-  } else if (shape === "diamond") {
-    ctx.moveTo(x, y - radius);
-    ctx.lineTo(x + radius, y);
-    ctx.lineTo(x, y + radius);
-    ctx.lineTo(x - radius, y);
-    ctx.closePath();
-  } else if (shape === "star") {
-    for (let pointIndex = 0; pointIndex < 10; pointIndex += 1) {
-      const pointRadius = pointIndex % 2 === 0 ? radius : radius * 0.44;
-      const angle = -Math.PI / 2 + pointIndex * Math.PI / 5;
-      const pointX = x + Math.cos(angle) * pointRadius;
-      const pointY = y + Math.sin(angle) * pointRadius;
-      if (pointIndex === 0) ctx.moveTo(pointX, pointY);
-      else ctx.lineTo(pointX, pointY);
-    }
-    ctx.closePath();
-  } else {
-    ctx.moveTo(x, y + radius * 0.82);
-    ctx.bezierCurveTo(x - radius * 1.35, y, x - radius * 0.72, y - radius, x, y - radius * 0.3);
-    ctx.bezierCurveTo(x + radius * 0.72, y - radius, x + radius * 1.35, y, x, y + radius * 0.82);
-    ctx.closePath();
-  }
-
-  ctx.fill();
-  if (color === "#ffffff") ctx.stroke();
-  ctx.restore();
-}
-
-function DrawingBoard({ page, age, onComplete }: { page: number; age: number; onComplete: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const [color, setColor] = useState(COLORS[0]);
-  const [size, setSize] = useState(age === 0 ? 18 : 9);
-  const [history, setHistory] = useState<string[]>([]);
-  const [stampShape, setStampShape] = useState<StampShape | null>(null);
-
-  const prepareCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.max(600, rect.width * ratio);
-    canvas.height = 520 * ratio;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(ratio, ratio);
-    ctx.fillStyle = "#fffef9";
-    ctx.fillRect(0, 0, rect.width, 520);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  };
-
-  useEffect(prepareCanvas, []);
-
-  const point = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  };
-
-  const start = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    const ctx = event.currentTarget.getContext("2d");
-    const p = point(event);
-    if (!ctx) return;
-    if (stampShape) {
-      drawStamp(ctx, stampShape, p.x, p.y, Math.max(24, size * 2.5), color);
-      const snapshot = event.currentTarget.toDataURL();
-      setHistory((items) => [...items.slice(-7), snapshot]);
-      return;
-    }
-    drawing.current = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  };
-
-  const move = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!drawing.current) return;
-    const ctx = event.currentTarget.getContext("2d");
-    const p = point(event);
-    if (!ctx) return;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = size;
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  };
-
-  const stop = () => {
-    if (!drawing.current || !canvasRef.current) return;
-    drawing.current = false;
-    setHistory((items) => [...items.slice(-7), canvasRef.current!.toDataURL()]);
-  };
-
-  const clear = () => {
-    prepareCanvas();
-    setHistory([]);
-  };
-
-  const undo = () => {
-    if (history.length < 2 || !canvasRef.current) {
-      clear();
-      return;
-    }
-    const next = history.slice(0, -1);
-    const image = new Image();
-    image.onload = () => {
-      prepareCanvas();
-      canvasRef.current?.getContext("2d")?.drawImage(image, 0, 0, canvasRef.current.clientWidth, 520);
-    };
-    image.src = next[next.length - 1];
-    setHistory(next);
-  };
-
-  const save = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const filename = `colorquest-${page}.png`;
-    const picture = canvas.toDataURL("image/png");
-
-    if (Capacitor.isNativePlatform()) {
-      const saved = await Filesystem.writeFile({
-        path: filename,
-        data: picture.split(",")[1],
-        directory: Directory.Cache,
-      });
-      await Share.share({
-        title: "My ColorQuest picture",
-        text: "I made this in ColorQuest Kids!",
-        files: [saved.uri],
-        dialogTitle: "Save or share your picture",
-      });
-      onComplete();
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.download = filename;
-    link.href = picture;
-    link.click();
-    onComplete();
-  };
-
-  return (
-    <div className="creative-board">
-      <div className="tool-row" aria-label="Drawing tools">
-        <div className="color-tools">
-          {COLORS.map((swatch) => (
-            <button
-              key={swatch}
-              aria-label={`Use ${swatch === "#ffffff" ? "eraser" : swatch}`}
-              className={`swatch ${color === swatch ? "active" : ""}`}
-              style={{ background: swatch }}
-              onClick={() => setColor(swatch)}
-            />
-          ))}
-        </div>
-        <label className="size-control">
-          Brush
-          <input type="range" min="3" max="30" value={size} onChange={(e) => setSize(Number(e.target.value))} />
-        </label>
-        <button className="tool-button" onClick={undo}>↶ Undo</button>
-        <button className="tool-button" onClick={clear}>Clear</button>
-        <button className="save-button" onClick={save}>Save picture</button>
-      </div>
-      <div className="shape-tray" aria-label="Shape tools">
-        <span>Build with shapes</span>
-        <button className={stampShape === null ? "active" : ""} onClick={() => setStampShape(null)} aria-pressed={stampShape === null}>
-          <b>✏️</b><small>Draw</small>
-        </button>
-        {STAMP_SHAPES.map((item) => (
-          <button
-            key={item.shape}
-            className={stampShape === item.shape ? "active" : ""}
-            onClick={() => setStampShape(item.shape)}
-            aria-label={`Add ${item.label.toLowerCase()} shapes`}
-            aria-pressed={stampShape === item.shape}
-          >
-            <b>{item.icon}</b><small>{item.label}</small>
-          </button>
-        ))}
-        <em>{stampShape ? "Tap the canvas to place it. Brush size changes its size." : "Draw freely—or choose a shape, then tap the canvas."}</em>
-      </div>
-      <div className="canvas-stage">
-        <div className="prompt-card"><span>✨ Today&apos;s idea</span><strong>{promptFor(page, age)}</strong><small>Or draw anything you can imagine!</small></div>
-        <canvas
-          ref={canvasRef}
-          className="draw-canvas"
-          aria-label={stampShape ? `Canvas ready to add ${stampShape} shapes` : "Free drawing canvas"}
-          onPointerDown={start}
-          onPointerMove={move}
-          onPointerUp={stop}
-          onPointerCancel={stop}
-        />
-      </div>
-    </div>
   );
 }
 
@@ -742,6 +492,10 @@ function ColoringBoard({ page, age, onComplete }: { page: number; age: number; o
   const [fills, setFills] = useState<Record<number, string>>({});
   const [celebrated, setCelebrated] = useState(false);
   const needed = COLORING_PART_COUNTS[page % COLORING_PART_COUNTS.length];
+  const facts = age >= 2 ? OLDER_FACTS : FACTS;
+  const fact = facts[page % facts.length];
+
+  useAutoSpeak(["Pick a color, then tap a part of the picture.", fact], `color-${age}-${page}`);
 
   const paint = (id: number, nextColor: string) => {
     const next = { ...fills, [id]: nextColor };
@@ -783,109 +537,21 @@ function ColoringBoard({ page, age, onComplete }: { page: number; age: number; o
       )}
       <div className="learn-bubble">
         <span>💡 Did you know?</span>
-        <p>{(age >= 2 ? OLDER_FACTS : FACTS)[page % (age >= 2 ? OLDER_FACTS.length : FACTS.length)]}</p>
+        <p>{fact}</p>
+        <SpeakButton id={`color-fact-${age}-${page}`} label="Hear it" text={fact} />
       </div>
       {celebrated && <div className="success-toast" role="status">Beautiful work! You colored every part. ⭐</div>}
     </div>
   );
 }
 
-const DISCOVERY_FALLBACKS = [
-  "https://images.unsplash.com/photo-1650709137023-399fe2326bd7?auto=format&fit=crop&fm=jpg&q=80&w=1600",
-  "https://images.unsplash.com/photo-1626163450208-0fb18eb43b99?auto=format&fit=crop&fm=jpg&q=80&w=1600",
-  "https://images.unsplash.com/photo-1494564605686-2e931f77a8e2?auto=format&fit=crop&fm=jpg&q=80&w=1600",
-  "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia23/pia23645/PIA23645.jpg?crop=faces%2Cfocalpoint&fit=clip&h=1200&w=1200",
-  "https://assets.science.nasa.gov/dynamicimage/assets/science/missions/webb/science/2022/07/STScI-01GA6KKWG229B16K4Q38CH3BXS.png?crop=faces%2Cfocalpoint&fit=clip&h=1200&w=1800",
-];
-
-type CommonsImage = {
-  url: string;
-  credit: string;
-  license: string;
-  loading: boolean;
-};
-
-function plainText(value?: string) {
-  return (value || "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;|&#160;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function useMissionImage(query: string, page: number) {
-  const fallback = DISCOVERY_FALLBACKS[(page - 1) % DISCOVERY_FALLBACKS.length];
-  const [image, setImage] = useState<CommonsImage>({
-    url: fallback,
-    credit: "Loading a mission photograph…",
-    license: "",
-    loading: true,
-  });
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const parameters = new URLSearchParams({
-      action: "query",
-      generator: "search",
-      gsrsearch: query,
-      gsrnamespace: "0",
-      gsrlimit: "5",
-      gsrsort: "relevance",
-      prop: "pageimages",
-      piprop: "thumbnail|name",
-      pithumbsize: "1600",
-      format: "json",
-      origin: "*",
-    });
-
-    fetch(`https://en.wikipedia.org/w/api.php?${parameters.toString()}`, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error("Image search unavailable");
-        return response.json();
-      })
-      .then((data) => {
-        const pages = Object.values(data.query?.pages || {}) as Array<{
-          index?: number;
-          title?: string;
-          pageimage?: string;
-          thumbnail?: { source?: string };
-        }>;
-        const details = pages
-          .filter((item) => item.thumbnail?.source)
-          .sort((first, second) => (first.index || 999) - (second.index || 999))[0];
-
-        if (!details) throw new Error("No photograph found");
-        setImage({
-          url: details.thumbnail?.source || fallback,
-          credit: plainText(details.title).slice(0, 80) || "Wikipedia",
-          license: "Wikimedia Commons",
-          loading: false,
-        });
-      })
-      .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setImage({
-          url: fallback,
-          credit: "ColorQuest backup image",
-          license: "educational display",
-          loading: false,
-        });
-      });
-
-    return () => controller.abort();
-  }, [fallback, page, query]);
-
-  return image;
-}
-
 function DiscoveryBoard({ page, age, onComplete }: { page: number; age: number; onComplete: () => void }) {
   const mission = buildDiscoveryMission(page, age);
-  const image = useMissionImage(mission.imageQuery, page);
   const [answer, setAnswer] = useState("");
   const [result, setResult] = useState("");
   const [completed, setCompleted] = useState(false);
+
+  useAutoSpeak([mission.topicTitle, mission.place, mission.fact], `discover-${age}-${page}`);
 
   const check = () => {
     const correct = Number(answer) === mission.answer;
@@ -904,14 +570,21 @@ function DiscoveryBoard({ page, age, onComplete }: { page: number; age: number; 
         <strong>✨ {DISCOVERY_COUNTS.missions} distinct missions</strong>
       </div>
       <div className="discovery-hero">
-        <div className={`discovery-photo ${image.loading ? "loading" : ""}`}>
-          <img src={image.url} alt={`${mission.topicTitle}, ${mission.place}`} />
+        <div className="discovery-photo">
+          <DiscoveryArt topic={mission.topic} />
           <span>{mission.kind} · {mission.lens}</span>
-          <small>{image.loading ? image.credit : `Image: ${image.credit} · ${image.license}`}</small>
+          <small>{artCredit(mission.topic)}</small>
         </div>
         <div className="field-notes">
           <p className="mission-number">FIELD MISSION {String(page).padStart(3, "0")} · {mission.field.toUpperCase()}</p>
-          <h3>{mission.topicTitle}</h3>
+          <div className="field-notes-head">
+            <h3>{mission.topicTitle}</h3>
+            <SpeakButton
+              id={`discover-${age}-${page}`}
+              label="Read mission"
+              text={[mission.topicTitle, mission.place, mission.fact, ...mission.observe]}
+            />
+          </div>
           <p className="place-line">📍 {mission.place}</p>
           <p>{mission.fact}</p>
           <div className="observe-list">
@@ -996,9 +669,24 @@ function Studio({
   onProfiles: () => void;
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
 }) {
-  const activityCount = activity === "math" || activity === "science"
-    ? getLearningLessons(activity as Subject, age).length
-    : activity === "lab" ? getScienceLabs(age).length : 400;
+  const total = activityCount(activity, age);
+  const unit = activityUnit(activity);
+  const [drawingUnsaved, setDrawingUnsaved] = useState(false);
+
+  /**
+   * Leaving the Drawing Studio used to blank the canvas silently — and "Next
+   * activity" was the biggest button on the screen. The picture is autosaved
+   * now, but a child who taps away still deserves to be told what happens.
+   */
+  const guard = (action: () => void) => () => {
+    if (activity === "draw" && drawingUnsaved && typeof window !== "undefined") {
+      const keep = window.confirm(
+        "Your picture is kept here so you can come back to it, but it is not in your gallery yet.\n\nLeave this page anyway?",
+      );
+      if (!keep) return;
+    }
+    action();
+  };
   const completedHere = profileProgress.activities[activity].completed.includes(`${age}:${page}`);
 
   return (
@@ -1006,11 +694,11 @@ function Studio({
       <AppHeader compact profile={profile} onProfiles={onProfiles} onHome={onHome} onStart={() => onActivity("draw")} onParents={onParents} />
       <div className="studio-shell">
         <aside className="studio-sidebar">
-          <button className="back-home" onClick={onHome}>← Home</button>
+          <button className="back-home" onClick={guard(onHome)}>← Home</button>
           <p className="sidebar-label">My age world</p>
           <div className="age-pills">
             {AGE_GROUPS.map((group, index) => (
-              <button key={group.short} className={age === index ? "active" : ""} onClick={() => onAge(index)}>
+              <button key={group.short} className={age === index ? "active" : ""} onClick={guard(() => onAge(index))}>
                 <span>{group.icon}</span>{group.short}
               </button>
             ))}
@@ -1018,7 +706,7 @@ function Studio({
           <p className="sidebar-label">Create</p>
           <div className="activity-tabs">
             {(Object.keys(ACTIVITY_META) as Activity[]).filter((key) => age >= 2 || key !== "discover").map((key) => (
-              <button key={key} className={activity === key ? "active" : ""} onClick={() => onActivity(key)}>
+              <button key={key} className={activity === key ? "active" : ""} onClick={guard(() => onActivity(key))}>
                 <span>{ACTIVITY_META[key].icon}</span>
                 <span><strong>{ACTIVITY_META[key].title}</strong><small>{ACTIVITY_META[key].copy}</small><em>{profileProgress.activities[key].completed.length} completed</em></span>
               </button>
@@ -1034,14 +722,14 @@ function Studio({
               <h2>{ACTIVITY_META[activity].title} adventure</h2>
             </div>
             <div className="page-picker">
-              <button onClick={() => onPage(page === 1 ? activityCount : page - 1)} aria-label="Previous activity">←</button>
-              <label>{activity === "math" || activity === "science" ? "Concept" : activity === "lab" ? "Lab" : "Activity"} <input type="number" min="1" max={activityCount} value={page} onChange={(event) => onPage(Math.max(1, Math.min(activityCount, Number(event.target.value))))} /> of {activityCount}</label>
+              <button onClick={guard(() => onPage(page === 1 ? total : page - 1))} aria-label="Previous activity">←</button>
+              <label>{unit} <input type="number" min="1" max={total} value={page} onChange={(event) => onPage(Math.max(1, Math.min(total, Number(event.target.value))))} /> of {total}</label>
               <span className={`completion-marker ${completedHere ? "done" : ""}`}>{completedHere ? "✓ Done" : "In progress"}</span>
-              <button onClick={() => onPage(page === activityCount ? 1 : page + 1)} aria-label="Next activity">→</button>
+              <button onClick={guard(() => onPage(page === total ? 1 : page + 1))} aria-label="Next activity">→</button>
             </div>
           </div>
 
-          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} />}
+          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onDirtyChange={setDrawingUnsaved} />}
           {activity === "color" && <ColoringBoard key={`c-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}`} subject={activity} page={page} age={age} liked={profileProgress.learning.likedLessons.includes(getLearningLessons(activity, age)[page - 1].id)} onComplete={onComplete} onAttempt={() => onLearningAttempt(activity)} onLike={onLikeLesson} onSelectLesson={onPage} />}
@@ -1050,11 +738,94 @@ function Studio({
 
           <div className="next-row">
             <div><span>🌟</span><p><strong>Creative reminder</strong><br />There is no wrong way to make art.</p></div>
-            <button className="primary-button" onClick={() => onPage(page === activityCount ? 1 : page + 1)}>Next {activity === "math" || activity === "science" ? "concept" : activity === "lab" ? "lab" : "activity"} →</button>
+            <button className="primary-button" onClick={guard(() => onPage(page === total ? 1 : page + 1))}>Next {unit.toLowerCase()} →</button>
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+/**
+ * Grown-up controls for read-aloud. Speech is synthesised on the device by the
+ * system voice, so this changes nothing about privacy — it is here because a
+ * parent reading alongside a child may want the voice off, and because a child
+ * who is learning to read benefits from a slower pace than a fluent one.
+ */
+function ReadAloudSettings() {
+  const { settings, updateSettings } = useSpeech();
+  const supported = isSpeechSupported();
+
+  return (
+    <section className="read-aloud-settings">
+      <div>
+        <p className="eyebrow">Read aloud</p>
+        <h2>Every screen can read itself out loud</h2>
+        <p>
+          Children who cannot yet read can hear lessons, puzzles, labs and missions
+          spoken by this device&apos;s own voice. Nothing is recorded and nothing is
+          sent anywhere — the speech is produced offline, on the phone or tablet.
+        </p>
+      </div>
+
+      {!supported && (
+        <p className="read-aloud-unsupported" role="status">
+          This device&apos;s browser does not offer a speech voice, so read-aloud is
+          unavailable here. On Android, installing Google Text-to-Speech usually enables it.
+        </p>
+      )}
+
+      <label className="setting-row">
+        <input
+          type="checkbox"
+          checked={settings.enabled}
+          disabled={!supported}
+          onChange={(event) => updateSettings({ enabled: event.target.checked })}
+        />
+        <span><strong>Read-aloud available</strong><small>Shows a 🔊 button on lessons, puzzles, labs and missions.</small></span>
+      </label>
+
+      <fieldset className="setting-row setting-choice" disabled={!supported || !settings.enabled}>
+        <legend>Read the main text automatically when a screen opens</legend>
+        {([
+          ["young", "For ages 1–6", "Recommended. Older children tap 🔊 when they want it."],
+          ["always", "For every age", "Every screen reads itself as it opens."],
+          ["never", "Never automatically", "Only when the child taps 🔊."],
+        ] as const).map(([value, label, note]) => (
+          <label key={value}>
+            <input
+              type="radio"
+              name="auto-read"
+              checked={settings.autoRead === value}
+              onChange={() => updateSettings({ autoRead: value })}
+            />
+            <span><strong>{label}</strong><small>{note}</small></span>
+          </label>
+        ))}
+      </fieldset>
+
+      <label className="setting-row setting-rate">
+        <span><strong>Speaking speed</strong><small>Slower helps a child follow along word by word.</small></span>
+        <input
+          type="range"
+          min="0.5"
+          max="1.2"
+          step="0.05"
+          value={settings.rate}
+          disabled={!supported || !settings.enabled}
+          onChange={(event) => updateSettings({ rate: Number(event.target.value) })}
+        />
+        <em>{settings.rate <= 0.7 ? "Slow" : settings.rate >= 1.05 ? "Brisk" : "Steady"}</em>
+      </label>
+
+      <button
+        className="tool-button"
+        disabled={!supported || !settings.enabled}
+        onClick={() => speak("Hello! This is how ColorQuest will read to your child.", { rate: settings.rate })}
+      >
+        🔊 Hear a sample
+      </button>
+    </section>
   );
 }
 
@@ -1078,20 +849,16 @@ function ParentCorner({
   onDeleteProfile: (profileId: string) => void;
 }) {
   const [unlocked, setUnlocked] = useState(false);
-  const [answer, setAnswer] = useState("");
   if (!unlocked) {
     return (
       <main className="parent-page">
         <button className="brand" onClick={onHome}><span className="brand-mark">🌈</span><span>ColorQuest <em>Kids</em></span></button>
-        <section className="gate-card">
-          <span className="gate-icon">👋</span>
-          <p className="eyebrow">Grown-ups only</p>
-          <h2>Quick check</h2>
-          <p>What is 4 + 3?</p>
-          <input autoFocus inputMode="numeric" value={answer} onChange={(event) => setAnswer(event.target.value)} aria-label="Answer to four plus three" />
-          <button className="primary-button" onClick={() => answer.trim() === "7" && setUnlocked(true)}>Open parent corner</button>
-          <button className="text-button" onClick={onHome}>Back to play</button>
-        </section>
+        <GrownUpGate
+          intro="Parent Corner can delete profiles and export artwork, so please ask a grown-up to answer this."
+          confirmLabel="Open parent corner"
+          onPass={() => setUnlocked(true)}
+          onCancel={onHome}
+        />
       </main>
     );
   }
@@ -1130,6 +897,7 @@ function ParentCorner({
           </div>
           <button className="tool-button" onClick={onProfiles}>Add or switch profiles</button>
         </section>
+        <ReadAloudSettings />
         <div className="parent-notes">
           <article><h3>🌱 Let the child lead</h3><p>Ask “Tell me about your picture” instead of guessing what it is. This supports language and confidence.</p></article>
           <article><h3>⏱️ Keep sessions light</h3><p>For young children, 10–20 minutes is plenty. The app includes natural stopping points and no streak pressure.</p></article>
@@ -1263,14 +1031,17 @@ export default function ColorQuestApp() {
   };
 
   if (!activeProfile) return <ProfileSetup onCreate={addProfile} />;
-  if (view === "profile-new") return <ProfileSetup onCreate={addProfile} onCancel={() => setView("profiles")} />;
-  if (view === "profiles") return <ProfileHub profiles={family.profiles} activeProfileId={activeProfile.id} onSelect={selectProfile} onAdd={() => setView("profile-new")} onBack={() => setView("home")} />;
 
-  if (view === "studio") {
-    return <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onLikeLesson={likeLesson} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} />;
-  }
-  if (view === "parents") {
-    return <ParentCorner family={family} activeProfile={activeProfile} age={age} artworkRevision={artworkRevision} onHome={() => setView("home")} onProfiles={() => setView("profiles")} onUpdateProfile={updateProfile} onDeleteProfile={deleteProfile} />;
-  }
-  return <Home age={age} profileProgress={activeProgress} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || activeProgress.activities[activeProgress.lastActivity].lastPage > 1} onAge={changeAge} onStart={start} onStartLesson={(subject, lessonPage) => start(subject, false, lessonPage)} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;
+  const screen = view === "profile-new"
+    ? <ProfileSetup onCreate={addProfile} onCancel={() => setView("profiles")} />
+    : view === "profiles"
+      ? <ProfileHub profiles={family.profiles} activeProfileId={activeProfile.id} onSelect={selectProfile} onAdd={() => setView("profile-new")} onBack={() => setView("home")} />
+      : view === "studio"
+        ? <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onLikeLesson={likeLesson} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} />
+        : view === "parents"
+          ? <ParentCorner family={family} activeProfile={activeProfile} age={age} artworkRevision={artworkRevision} onHome={() => setView("home")} onProfiles={() => setView("profiles")} onUpdateProfile={updateProfile} onDeleteProfile={deleteProfile} />
+          : <Home age={age} profileProgress={activeProgress} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || activeProgress.activities[activeProgress.lastActivity].lastPage > 1} onAge={changeAge} onStart={start} onStartLesson={(subject, lessonPage) => start(subject, false, lessonPage)} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;
+
+  // Read-aloud pace follows the age world the child is currently exploring.
+  return <SpeechProvider ageWorld={age}>{screen}</SpeechProvider>;
 }

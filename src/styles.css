@@ -669,3 +669,96 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
+
+/* ---------- Read-aloud ---------- */
+.speak-button {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 8px 14px;
+  border: 2px solid #cfe3f7; border-radius: 999px;
+  background: #f3f9ff; color: var(--navy, #173b6d);
+  font-weight: 800; font-size: 14px; cursor: pointer;
+  flex: 0 0 auto; white-space: nowrap;
+}
+.speak-button:hover { background: #e6f2ff; }
+.speak-button:focus-visible { outline: 3px solid #55aaf5; outline-offset: 2px; }
+.speak-button > span { font-size: 19px; line-height: 1; }
+.speak-button.speaking { background: #ffe9e6; border-color: #ffb3a8; color: #b03a2b; }
+.speak-button.on-banner {
+  background: rgba(255, 255, 255, .92); border-color: transparent; color: #173b6d;
+}
+.speak-button.speaking::after {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: #e34948; animation: speak-pulse 1s ease-in-out infinite;
+}
+@keyframes speak-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) {
+  .speak-button.speaking::after { animation: none; }
+}
+
+.question-head, .choice-prompt-head, .field-notes-head, .lab-question-head, .lab-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+}
+.question-head h4, .choice-prompt-head h3, .field-notes-head h3, .lab-question-head h4, .lab-card-head h4 {
+  margin: 0; flex: 1 1 220px;
+}
+.learn-bubble .speak-button { margin-top: 10px; }
+
+/* ---------- Read-aloud settings (Parent Corner) ---------- */
+.read-aloud-settings {
+  margin: 34px 0; padding: 26px; border-radius: 24px;
+  background: #f4f9ff; border: 2px solid #dceaf9;
+  display: grid; gap: 16px;
+}
+.read-aloud-settings h2 { margin: 4px 0 8px; font-size: clamp(24px, 3vw, 32px); letter-spacing: -.02em; }
+.read-aloud-settings p { margin: 0; color: #4a6382; max-width: 62ch; }
+.read-aloud-unsupported {
+  padding: 12px 16px; border-radius: 14px;
+  background: #fff6e2; border: 1px solid #f2d999; color: #7a5a12 !important;
+}
+.setting-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px; border-radius: 16px; background: white; border: 1px solid #e3edf8;
+}
+.setting-row input[type="checkbox"], .setting-row input[type="radio"] {
+  width: 24px; height: 24px; margin-top: 2px; flex: 0 0 auto; accent-color: #24bca4;
+}
+.setting-row strong { display: block; color: var(--navy, #173b6d); font-size: 16px; }
+.setting-row small { display: block; color: #62789a; font-size: 13.5px; line-height: 1.45; }
+.setting-choice { display: grid; gap: 10px; border: 1px solid #e3edf8; }
+.setting-choice legend { padding: 0 6px; font-weight: 800; color: var(--navy, #173b6d); font-size: 14px; }
+.setting-choice label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.setting-choice:disabled, .setting-row:has(input:disabled) { opacity: .55; }
+.setting-rate { align-items: center; flex-wrap: wrap; }
+.setting-rate input[type="range"] { flex: 1 1 180px; accent-color: #24bca4; }
+.setting-rate em { font-style: normal; font-weight: 800; color: #24bca4; min-width: 56px; }
+
+/* ---------- Grown-up gate ---------- */
+.gate-sum {
+  font-size: clamp(34px, 6vw, 52px); font-weight: 900; letter-spacing: .02em;
+  color: var(--navy, #173b6d); margin: 8px 0 4px; font-variant-numeric: tabular-nums;
+}
+.gate-error { color: #b03a2b; font-weight: 700; }
+.gate-card.compact { padding: 20px; box-shadow: none; border: 2px solid #e3edf8; }
+.gate-card.compact .gate-sum { font-size: 30px; }
+
+/* ---------- Drawing drafts ---------- */
+.draft-restored {
+  margin: 10px 0 0; padding: 10px 16px; border-radius: 14px;
+  background: #eafaf4; border: 1px solid #b8e8d8; color: #17624c;
+  font-size: 14.5px; font-weight: 600;
+}
+
+/* ---------- Discovery offline artwork ---------- */
+.discovery-photo svg, .discovery-photo img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+}
+
+/* ---------- Motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

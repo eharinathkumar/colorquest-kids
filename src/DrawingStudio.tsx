@@ -1,4 +1,6 @@
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import { deleteDraft, draftKey, loadDraft, saveDraft } from "./canvas-drafts";
+import { SpeakButton, useAutoSpeak } from "./SpeechProvider";
 
 type BrushKind = "marker" | "pencil" | "crayon" | "chalk" | "watercolor" | "rainbow" | "sparkle" | "eraser";
 type StampShape = "circle" | "square" | "triangle" | "diamond" | "star" | "heart" | "moon" | "cloud";
@@ -149,15 +151,20 @@ function ShapeGlyph({ item }: { item: ShapeItem }) {
 export default function DrawingStudio({
   page,
   age,
+  profileId,
   profileName,
   onComplete,
   onSaveArtwork,
+  onDirtyChange,
 }: {
   page: number;
   age: number;
+  profileId: string;
   profileName: string;
   onComplete: () => void;
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
+  /** Lets the studio warn before navigation would discard unsaved work. */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const historyRef = useRef<CanvasHistory[]>([]);
@@ -174,6 +181,12 @@ export default function DrawingStudio({
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [background, setBackground] = useState("paper");
   const [savedMessage, setSavedMessage] = useState("");
+  const [restored, setRestored] = useState(false);
+  const dirty = useRef(false);
+  const draftId = draftKey(profileId, "draw", age, page);
+  const prompt = creativePrompt(page, age);
+
+  useAutoSpeak(["Today's idea:", prompt, "Or draw anything you can imagine."], draftId);
 
   const prepareCanvas = () => {
     const canvas = canvasRef.current;
@@ -192,11 +205,43 @@ export default function DrawingStudio({
     ctx.lineJoin = "round";
   };
 
+  const markDirty = useCallback((value: boolean) => {
+    if (dirty.current === value) return;
+    dirty.current = value;
+    onDirtyChange?.(value);
+  }, [onDirtyChange]);
+
+  /**
+   * Restore whatever this child was last drawing on this page, so leaving and
+   * coming back — or being interrupted by a closed app — keeps the picture.
+   */
   useEffect(() => {
+    let cancelled = false;
     prepareCanvas();
-    const ink = canvasRef.current?.toDataURL() || "";
-    historyRef.current = [{ ink, shapes: [], background: "paper" }];
-  }, []);
+    const blank = canvasRef.current?.toDataURL() || "";
+    historyRef.current = [{ ink: blank, shapes: [], background: "paper" }];
+    setRestored(false);
+
+    loadDraft(draftId).then((draft) => {
+      if (cancelled || !draft) return;
+      setBackground(draft.background);
+      setShapes((draft.shapes as ShapeItem[]).map((item) => ({ ...item })));
+      const image = new Image();
+      image.onload = () => {
+        if (cancelled) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.clientWidth, canvas.clientHeight);
+        historyRef.current = [{ ink: draft.ink, shapes: draft.shapes as ShapeItem[], background: draft.background }];
+        setRestored(true);
+        markDirty(true);
+      };
+      image.src = draft.ink;
+    });
+
+    return () => { cancelled = true; };
+    // Re-runs when the child moves to another page, age world or profile.
+  }, [draftId, markDirty]);
 
   const point = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -206,6 +251,8 @@ export default function DrawingStudio({
   const capture = (nextShapes = shapes, nextBackground = background) => {
     const ink = canvasRef.current?.toDataURL() || "";
     historyRef.current = [...historyRef.current.slice(-15), { ink, shapes: nextShapes.map((item) => ({ ...item })), background: nextBackground }];
+    markDirty(true);
+    void saveDraft({ id: draftId, ink, shapes: nextShapes.map((item) => ({ ...item })), background: nextBackground });
   };
 
   const placeShape = (x: number, y: number) => {
@@ -304,12 +351,19 @@ export default function DrawingStudio({
   };
 
   const startOver = () => {
+    // Deliberate destruction, so confirm it — this is the one control whose job
+    // is to throw the drawing away.
+    if (dirty.current && typeof window !== "undefined"
+      && !window.confirm("Start a new page? This picture has not been saved to the gallery yet.")) return;
     prepareCanvas();
     setShapes([]);
     setSelectedShapeId(null);
     setBackground("paper");
+    setRestored(false);
     const ink = canvasRef.current?.toDataURL() || "";
     historyRef.current = [{ ink, shapes: [], background: "paper" }];
+    markDirty(false);
+    void deleteDraft(draftId);
     setSavedMessage("Fresh canvas ready!");
   };
 
@@ -357,6 +411,8 @@ export default function DrawingStudio({
 
   const save = async () => {
     await onSaveArtwork(exportPicture(), `${profileName}'s creation ${page}`);
+    // Now that it lives in the gallery, leaving the page is no longer a loss.
+    markDirty(false);
     setSavedMessage("Saved privately to your artwork gallery! ⭐");
     if (!completed.current) { completed.current = true; onComplete(); }
   };
@@ -424,7 +480,12 @@ export default function DrawingStudio({
       </section>
 
       <div className="canvas-stage advanced" style={{ background: backgroundStyle }}>
-        <div className="prompt-card"><span>✨ Creative spark</span><strong>{creativePrompt(page, age)}</strong><small>Use it, remix it, or invent your own idea.</small></div>
+        <div className="prompt-card">
+          <span>✨ Creative spark</span>
+          <strong>{prompt}</strong>
+          <small>Use it, remix it, or invent your own idea.</small>
+          <SpeakButton id={`draw-prompt-${age}-${page}`} label="Hear the idea" text={[prompt, "Use it, remix it, or invent your own idea."]} />
+        </div>
         <canvas
           ref={canvasRef}
           className="draw-canvas"
@@ -474,6 +535,7 @@ export default function DrawingStudio({
         </svg>
       </div>
       <p className="canvas-tip">{stampShape ? "Tap to place a shape. Tap it again to move or edit it." : "Draw with a finger, mouse, or stylus. Your base paint stays underneath."}</p>
+      {restored && <p className="draft-restored" role="status">↩︎ Your picture from last time is back. Keep going, or tap <strong>New page</strong> to start fresh.</p>}
       {savedMessage && <div className="success-toast" role="status">{savedMessage}</div>}
     </div>
   );

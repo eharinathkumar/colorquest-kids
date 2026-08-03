@@ -9,6 +9,12 @@ export type PuzzleDefinition =
 
 export const PUZZLE_FAMILIES = ["match", "sort", "sequence", "pattern", "odd", "clue"] as const;
 
+/**
+ * How far the generator is walked when taking stock of what actually exists.
+ * This is a search bound, not a promise of content — see `getPuzzleDeck`.
+ */
+const MAX_GENERATED_PAGE = 400;
+
 const PAIR_BANKS: PuzzlePair[][] = [
   [
     { item: "🐝", label: "bee", home: "🌼", homeLabel: "flower" },
@@ -316,7 +322,7 @@ function buildPattern(age: number, variant: number): Extract<PuzzleDefinition, {
 
 export function buildPuzzle(page: number, age: number): PuzzleDefinition {
   const safeAge = Math.max(0, Math.min(3, age));
-  const safePage = Math.max(1, Math.min(400, page));
+  const safePage = Math.max(1, Math.min(MAX_GENERATED_PAGE, page));
   const familyIndex = (safePage - 1) % PUZZLE_FAMILIES.length;
   const variant = Math.floor((safePage - 1) / PUZZLE_FAMILIES.length);
   const family = PUZZLE_FAMILIES[familyIndex];
@@ -375,4 +381,67 @@ export function buildPuzzle(page: number, age: number): PuzzleDefinition {
     answer,
     explanation: `The clues describe ${answer}.`,
   };
+}
+
+/**
+ * A signature of a puzzle's *content*, ignoring the generated id.
+ *
+ * The id embeds the variant number, so two identical puzzles produced at
+ * different pages carry different ids and would look distinct if counted
+ * naively. Counting by content is what makes the number on screen true.
+ */
+function contentSignature(puzzle: PuzzleDefinition): string {
+  if (puzzle.kind === "match") return `match|${puzzle.pairs.map((pair) => pair.label).sort().join(",")}`;
+  if (puzzle.kind === "sort") return `sort|${puzzle.title}|${puzzle.items.map((item) => item.id).sort().join(",")}`;
+  if (puzzle.kind === "sequence") return `sequence|${puzzle.title}`;
+  return `${puzzle.family}|${puzzle.prompt}|${puzzle.answer}`;
+}
+
+/**
+ * Every genuinely distinct puzzle for an age world, in the rotating family
+ * order children already experience — match, sort, sequence, pattern, odd,
+ * clue, repeat — but with duplicates removed.
+ *
+ * Previously the studio advertised "of 400" while the banks behind it held far
+ * less, so a child hit silent repeats from about page 37 onward. The deck is
+ * the real inventory: its length is what the page counter shows, and walking to
+ * the end of it means genuinely seeing everything.
+ *
+ * Adding entries to any bank grows the deck automatically — no counter to
+ * update by hand, and no way for the advertised number to drift from reality.
+ */
+const deckCache = new Map<number, PuzzleDefinition[]>();
+
+export function getPuzzleDeck(age: number): PuzzleDefinition[] {
+  const safeAge = Math.max(0, Math.min(3, Math.floor(age)));
+  const cached = deckCache.get(safeAge);
+  if (cached) return cached;
+
+  const seen = new Set<string>();
+  const deck: PuzzleDefinition[] = [];
+  for (let page = 1; page <= MAX_GENERATED_PAGE; page += 1) {
+    const puzzle = buildPuzzle(page, safeAge);
+    const signature = contentSignature(puzzle);
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    deck.push(puzzle);
+  }
+
+  deckCache.set(safeAge, deck);
+  return deck;
+}
+
+/** The true number of distinct puzzles available in an age world. */
+export function countPuzzles(age: number): number {
+  return getPuzzleDeck(age).length;
+}
+
+/**
+ * Fetch the puzzle for a page, guaranteeing that consecutive pages are
+ * different puzzles for as long as distinct content lasts.
+ */
+export function getPuzzle(page: number, age: number): PuzzleDefinition {
+  const deck = getPuzzleDeck(age);
+  const index = (Math.max(1, Math.floor(page)) - 1) % deck.length;
+  return deck[index];
 }

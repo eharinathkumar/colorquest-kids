@@ -1,11 +1,33 @@
+/**
+ * A curated, editorially approved image for a topic.
+ *
+ * Discovery Lab previously searched Wikipedia live and displayed whatever came
+ * back, which meant the app could not certify what a child would see. Images
+ * now only ever come from here — leave it unset and the mission card is drawn
+ * offline instead. Fill one in only after checking the image itself, its
+ * licence, and its suitability for the youngest child who can reach the topic.
+ */
+export type CuratedImage = {
+  /** Path to a file shipped in the build, e.g. `discovery/everest.jpg`. */
+  src: string;
+  /** Photographer or institution, shown under the image. */
+  credit: string;
+  /** Licence name, e.g. "CC BY-SA 4.0" or "Public domain (NASA)". */
+  license: string;
+  alt?: string;
+};
+
 export type DiscoveryTopic = {
   title: string;
   place: string;
   kind: string;
   field: string;
+  /** Retained as an editorial research hint. Never used to fetch anything. */
   search: string;
   fact79: string;
   fact1012: string;
+  /** Optional approved photograph. Unset topics use offline generated artwork. */
+  image?: CuratedImage;
 };
 
 type MissionLens = {
@@ -964,7 +986,8 @@ export function buildDiscoveryMission(page: number, age: number) {
     kind: topic.kind,
     field: topic.field,
     lens: lens.name,
-    imageQuery: `${topic.search} ${lens.imageCue}`,
+    /** The topic itself, so the card can draw or show its approved image. */
+    topic,
     fact: `${older ? topic.fact1012 : topic.fact79} ${older ? lens.connection1012 : lens.connection79}`,
     observe: lens.observe,
     story: lens.story(topic),

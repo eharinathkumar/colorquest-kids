@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Capacitor } from "@capacitor/core";
@@ -9,7 +9,12 @@ import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
 import { getLearningLesson, getLearningLessons, LEARNING_COUNTS } from "./learning-data";
 import { getScienceLabs, LAB_COUNTS } from "./lab-data";
 import { getFavoriteInterest, getLessonGuide, getMentorRecommendations } from "./mentor-data";
-import { buildPuzzle, PUZZLE_FAMILIES } from "./puzzle-data";
+import { buildPuzzle, countPuzzles, getPuzzle, getPuzzleDeck, PUZZLE_FAMILIES } from "./puzzle-data";
+import { activityCount, COLORING_SCENE_COUNT } from "./content-counts";
+import { isSpeechSupported, joinForSpeech, rateForAge, shouldAutoRead, speak, stopSpeaking, toSpokenText } from "./speech";
+import { makeGateChallenge } from "./GrownUpGate";
+import { artCredit, DiscoveryArt, sceneFor } from "./discovery-art";
+import { draftKey, loadDraft, saveDraft } from "./canvas-drafts";
 import { emptyProgress, PROFILE_STORAGE_KEY, recordCompletion, recordLocation, type FamilyData } from "./profile-data";
 
 vi.mock("@capacitor/filesystem", () => ({
@@ -66,6 +71,19 @@ beforeEach(() => {
   );
   vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue("data:image/png;base64,test");
 });
+
+
+/**
+ * The grown-up gate now asks a freshly generated multiplication, so a test
+ * cannot hard-code the answer any more than a child can memorise it.
+ */
+async function passGrownUpGate(user: ReturnType<typeof userEvent.setup>, confirmLabel: string) {
+  const sum = document.querySelector(".gate-sum")?.textContent || "";
+  const [, left, right] = sum.match(/(\d+)\s*×\s*(\d+)/) || [];
+  expect(left).toBeTruthy();
+  await user.type(screen.getByLabelText(`Answer to ${left} times ${right}`), String(Number(left) * Number(right)));
+  await user.click(screen.getByRole("button", { name: confirmLabel }));
+}
 
 describe("ColorQuest core journeys", () => {
   it("opens the drawing studio from the home page", async () => {
@@ -133,8 +151,7 @@ describe("ColorQuest core journeys", () => {
     expect(screen.getByRole("status").textContent).toContain("Saved privately");
 
     await user.click(screen.getByRole("button", { name: "Grown-ups" }));
-    await user.type(screen.getByLabelText("Answer to four plus three"), "7");
-    await user.click(screen.getByRole("button", { name: "Open parent corner" }));
+    await passGrownUpGate(user, "Open parent corner");
     const exportButton = await screen.findByRole("button", { name: "Download / share" });
     await user.click(exportButton);
 
@@ -145,7 +162,7 @@ describe("ColorQuest core journeys", () => {
   it("colors a drawing and keeps the coloring activity usable", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
-    await user.click(screen.getByRole("button", { name: /Color400 pages for every age/ }));
+    await user.click(screen.getByRole("button", { name: /Color10 scenes to fill with color/ }));
 
     const firstPart = screen.getByRole("button", { name: "Color part 1" });
     await user.click(firstPart);
@@ -199,11 +216,9 @@ describe("Discovery Lab catalog", () => {
     for (const age of [2, 3]) {
       const missions = Array.from({ length: 400 }, (_, index) => buildDiscoveryMission(index + 1, age));
       const titles = new Set(missions.map((mission) => mission.title));
-      const imageQueries = new Set(missions.map((mission) => mission.imageQuery));
       const stories = new Set(missions.map((mission) => mission.story));
 
       expect(titles.size).toBe(400);
-      expect(imageQueries.size).toBe(400);
       expect(stories.size).toBe(400);
       expect(missions.every((mission) => mission.question && Number.isFinite(mission.answer))).toBe(true);
     }
@@ -344,5 +359,135 @@ describe("Science Lab and mentor paths", () => {
     expect(recommendations.map((item) => item.subject)).toEqual(["math", "science"]);
     expect(recommendations.every((item) => item.path && item.page === 1)).toBe(true);
     expect(getLessonGuide(recommendations[0].lesson, "math", 2).slides).toHaveLength(4);
+  });
+});
+
+describe("Read-aloud", () => {
+  it("strips emoji so a prompt is intelligible when spoken", () => {
+    expect(toSpokenText("🚀 Which group has one star? ⭐")).toBe("Which group has one star?");
+    expect(toSpokenText("🍎🍎🍎")).toBe("");
+  });
+
+  it("speaks maths notation as words rather than symbols", () => {
+    expect(toSpokenText("6×4")).toBe("6 times 4");
+    expect(toSpokenText("20÷4")).toBe("20 divided by 4");
+    expect(toSpokenText("75%")).toBe("75 percent");
+    expect(toSpokenText("A rover travels 40 km")).toContain("kilometres");
+  });
+
+  it("joins fragments with pauses and drops empty ones", () => {
+    expect(joinForSpeech("Counting to 20", "", undefined, "What comes after 16?"))
+      .toBe("Counting to 20. What comes after 16?");
+  });
+
+  it("reads to the youngest children automatically and leaves older ones in control", () => {
+    const settings = { enabled: true, rate: 0.85, autoRead: "young" as const };
+    expect(shouldAutoRead(settings, 0)).toBe(true);
+    expect(shouldAutoRead(settings, 1)).toBe(true);
+    expect(shouldAutoRead(settings, 2)).toBe(false);
+    expect(shouldAutoRead({ ...settings, autoRead: "always" }, 3)).toBe(true);
+    expect(shouldAutoRead({ ...settings, enabled: false }, 0)).toBe(false);
+  });
+
+  it("slows the voice down for younger age worlds", () => {
+    const settings = { enabled: true, rate: 0.85, autoRead: "young" as const };
+    expect(rateForAge(settings, 0)).toBeLessThan(rateForAge(settings, 3));
+    expect(rateForAge({ ...settings, rate: 1.2 }, 3)).toBeLessThanOrEqual(1.2);
+    expect(rateForAge({ ...settings, rate: 0.5 }, 0)).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("degrades to silence rather than throwing where speech is unavailable", () => {
+    expect(isSpeechSupported()).toBe(false);
+    expect(() => stopSpeaking()).not.toThrow();
+    expect(speak("hello")).toBe(false);
+  });
+});
+
+describe("Honest content counts", () => {
+  it("counts only genuinely distinct puzzles, not generated ids", () => {
+    for (const age of [0, 1, 2, 3]) {
+      const deck = getPuzzleDeck(age);
+      const signatures = new Set(deck.map((puzzle) => JSON.stringify(
+        puzzle.kind === "match" ? puzzle.pairs.map((pair) => pair.label).sort()
+          : puzzle.kind === "sort" ? [puzzle.title, puzzle.items.map((item) => item.id).sort()]
+            : puzzle.kind === "sequence" ? puzzle.title
+              : [puzzle.prompt, puzzle.answer],
+      )));
+      expect(signatures.size).toBe(deck.length);
+      expect(deck.length).toBeGreaterThan(0);
+      expect(deck.length).toBeLessThan(400);
+    }
+  });
+
+  it("never shows the same puzzle twice in a row across a full pass", () => {
+    for (const age of [0, 1, 2, 3]) {
+      const total = countPuzzles(age);
+      for (let page = 1; page < total; page += 1) {
+        expect(getPuzzle(page, age).id).not.toBe(getPuzzle(page + 1, age).id);
+      }
+    }
+  });
+
+  it("reports counts a parent can verify by paging to the end", () => {
+    expect(activityCount("color", 0)).toBe(COLORING_SCENE_COUNT);
+    expect(activityCount("color", 3)).toBe(COLORING_SCENE_COUNT);
+    expect(activityCount("math", 1)).toBe(getLearningLessons("math", 1).length);
+    expect(activityCount("lab", 2)).toBe(getScienceLabs(2).length);
+    expect(activityCount("discover", 3)).toBe(DISCOVERY_COUNTS.missions);
+    for (const age of [0, 1, 2, 3]) {
+      expect(activityCount("puzzle", age)).toBe(countPuzzles(age));
+      expect(activityCount("puzzle", age)).toBeLessThan(400);
+    }
+  });
+});
+
+describe("Grown-up gate", () => {
+  it("asks something beyond the oldest maths trail, and varies it", () => {
+    const answers = new Set<number>();
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      const challenge = makeGateChallenge();
+      expect(challenge.left * challenge.right).toBe(challenge.answer);
+      expect(challenge.answer).toBeGreaterThan(20);
+      answers.add(challenge.answer);
+    }
+    // The old gate was a single constant ("4 + 3"); this must not be guessable.
+    expect(answers.size).toBeGreaterThan(10);
+  });
+});
+
+describe("Discovery Lab safety", () => {
+  it("makes no network request for mission imagery", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    for (const age of [2, 3]) {
+      for (let page = 1; page <= 25; page += 1) {
+        const mission = buildDiscoveryMission(page, age);
+        render(<DiscoveryArt topic={mission.topic} />);
+        cleanup();
+      }
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("draws every topic locally until a curated image is approved for it", () => {
+    for (let page = 1; page <= DISCOVERY_COUNTS.missions; page += 1) {
+      const mission = buildDiscoveryMission(page, 3);
+      expect(sceneFor(mission.topic)).toBeTruthy();
+      expect(artCredit(mission.topic)).toContain("drawn on this device");
+    }
+  });
+});
+
+describe("Drawing drafts", () => {
+  it("scopes a draft to one child, activity, age world and page", () => {
+    expect(draftKey("child-a", "draw", 1, 4)).toBe("child-a:draw:1:4");
+    expect(draftKey("child-a", "draw", 1, 4)).not.toBe(draftKey("child-b", "draw", 1, 4));
+    expect(draftKey("child-a", "draw", 1, 4)).not.toBe(draftKey("child-a", "draw", 2, 4));
+    expect(draftKey("child-a", "draw", 1, 4)).not.toBe(draftKey("child-a", "draw", 1, 5));
+  });
+
+  it("survives storage being unavailable instead of breaking the canvas", async () => {
+    await expect(saveDraft({ id: "x", ink: "data:,", shapes: [], background: "paper" })).resolves.toBeUndefined();
+    await expect(loadDraft("does-not-exist")).resolves.toBeNull();
   });
 });
