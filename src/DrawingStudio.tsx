@@ -16,6 +16,7 @@ type ShapeItem = {
 };
 
 type CanvasHistory = { ink: string; shapes: ShapeItem[]; background: string };
+type MobileToolPanel = "brush" | "paint" | "shape";
 
 const COLORS = ["#ff604f", "#ffd65a", "#24bca4", "#55aaf5", "#7857d6", "#f58bbb", "#173b6d", "#ffffff"];
 const BRUSHES: Array<{ id: BrushKind; icon: string; label: string }> = [
@@ -156,6 +157,7 @@ export default function DrawingStudio({
   onComplete,
   onSaveArtwork,
   onDirtyChange,
+  onRequestStartOver,
 }: {
   page: number;
   age: number;
@@ -165,6 +167,8 @@ export default function DrawingStudio({
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
   /** Lets the studio warn before navigation would discard unsaved work. */
   onDirtyChange?: (dirty: boolean) => void;
+  /** Opens the app's friendly confirmation UI instead of a browser dialog. */
+  onRequestStartOver?: (confirm: () => void) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const historyRef = useRef<CanvasHistory[]>([]);
@@ -182,7 +186,10 @@ export default function DrawingStudio({
   const [background, setBackground] = useState("paper");
   const [savedMessage, setSavedMessage] = useState("");
   const [restored, setRestored] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<MobileToolPanel>("brush");
   const dirty = useRef(false);
+  const draftTimer = useRef<number | null>(null);
+  const pendingDraft = useRef<Parameters<typeof saveDraft>[0] | null>(null);
   const draftId = draftKey(profileId, "draw", age, page);
   const prompt = creativePrompt(page, age);
 
@@ -210,6 +217,24 @@ export default function DrawingStudio({
     dirty.current = value;
     onDirtyChange?.(value);
   }, [onDirtyChange]);
+
+  const flushDraft = useCallback(() => {
+    if (draftTimer.current !== null) {
+      window.clearTimeout(draftTimer.current);
+      draftTimer.current = null;
+    }
+    const next = pendingDraft.current;
+    pendingDraft.current = null;
+    if (next) void saveDraft(next);
+  }, []);
+
+  const scheduleDraft = useCallback((next: Parameters<typeof saveDraft>[0]) => {
+    pendingDraft.current = next;
+    if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
+    draftTimer.current = window.setTimeout(flushDraft, 320);
+  }, [flushDraft]);
+
+  useEffect(() => () => flushDraft(), [flushDraft]);
 
   /**
    * Restore whatever this child was last drawing on this page, so leaving and
@@ -252,7 +277,7 @@ export default function DrawingStudio({
     const ink = canvasRef.current?.toDataURL() || "";
     historyRef.current = [...historyRef.current.slice(-15), { ink, shapes: nextShapes.map((item) => ({ ...item })), background: nextBackground }];
     markDirty(true);
-    void saveDraft({ id: draftId, ink, shapes: nextShapes.map((item) => ({ ...item })), background: nextBackground });
+    scheduleDraft({ id: draftId, ink, shapes: nextShapes.map((item) => ({ ...item })), background: nextBackground });
   };
 
   const placeShape = (x: number, y: number) => {
@@ -348,13 +373,14 @@ export default function DrawingStudio({
     setBackground(previous.background);
     setSelectedShapeId(null);
     restoreInk(previous.ink);
+    markDirty(true);
+    scheduleDraft({ id: draftId, ink: previous.ink, shapes: previous.shapes.map((item) => ({ ...item })), background: previous.background });
   };
 
-  const startOver = () => {
-    // Deliberate destruction, so confirm it — this is the one control whose job
-    // is to throw the drawing away.
-    if (dirty.current && typeof window !== "undefined"
-      && !window.confirm("Start a new page? This picture has not been saved to the gallery yet.")) return;
+  const clearForNewPage = () => {
+    if (draftTimer.current !== null) window.clearTimeout(draftTimer.current);
+    draftTimer.current = null;
+    pendingDraft.current = null;
     prepareCanvas();
     setShapes([]);
     setSelectedShapeId(null);
@@ -365,6 +391,14 @@ export default function DrawingStudio({
     markDirty(false);
     void deleteDraft(draftId);
     setSavedMessage("Fresh canvas ready!");
+  };
+
+  const startOver = () => {
+    if (dirty.current && onRequestStartOver) {
+      onRequestStartOver(clearForNewPage);
+      return;
+    }
+    clearForNewPage();
   };
 
   const changeBackground = (id: string) => {
@@ -410,6 +444,7 @@ export default function DrawingStudio({
   };
 
   const save = async () => {
+    flushDraft();
     await onSaveArtwork(exportPicture(), `${profileName}'s creation ${page}`);
     // Now that it lives in the gallery, leaving the page is no longer a loss.
     markDirty(false);
@@ -423,7 +458,25 @@ export default function DrawingStudio({
 
   return (
     <div className="creative-board drawing-studio-v2">
-      <section className="art-tool-section" aria-label="Brush studio">
+      <nav className="mobile-art-dock" aria-label="Drawing tools">
+        {([
+          ["brush", "🖌️", "Brushes"],
+          ["paint", "🎨", "Base paint"],
+          ["shape", "🔷", "Shapes"],
+        ] as const).map(([panel, icon, label]) => (
+          <button
+            key={panel}
+            type="button"
+            className={mobilePanel === panel ? "active" : ""}
+            aria-pressed={mobilePanel === panel}
+            onClick={() => setMobilePanel(panel)}
+          >
+            <span aria-hidden="true">{icon}</span><small>{label}</small>
+          </button>
+        ))}
+      </nav>
+
+      <section className={`art-tool-section mobile-tool-panel ${mobilePanel === "brush" ? "mobile-active" : ""}`} aria-label="Brush studio">
         <div className="tool-section-title"><span>🖌️</span><strong>Brush studio</strong><small>Every brush makes a different kind of mark</small></div>
         <div className="brush-picker">
           {availableBrushes.map((item) => (
@@ -449,14 +502,14 @@ export default function DrawingStudio({
         </div>
       </section>
 
-      <section className="art-tool-section background-section" aria-label="Canvas background">
+      <section className={`art-tool-section background-section mobile-tool-panel ${mobilePanel === "paint" ? "mobile-active" : ""}`} aria-label="Canvas background">
         <div className="tool-section-title"><span>🎨</span><strong>Base paint</strong><small>Fill the board first, then create on top</small></div>
         <div className="background-picker">
           {BACKGROUNDS.map((item) => <button key={item.id} className={background === item.id ? "active" : ""} onClick={() => changeBackground(item.id)} aria-pressed={background === item.id}><i style={{ background: item.style }} />{item.label}</button>)}
         </div>
       </section>
 
-      <section className="art-tool-section shape-studio" aria-label="Shape studio">
+      <section className={`art-tool-section shape-studio mobile-tool-panel ${mobilePanel === "shape" ? "mobile-active" : ""}`} aria-label="Shape studio">
         <div className="tool-section-title"><span>🔷</span><strong>Shape studio</strong><small>Place, move, resize, rotate and combine</small></div>
         <div className="shape-picker">
           {SHAPES.map((item) => (

@@ -1,8 +1,20 @@
 import { useState } from "react";
-import { getScienceLab, getScienceLabs } from "./lab-data";
-import { SpeakButton, useAutoSpeak } from "./SpeechProvider";
+import { getScienceLab, getScienceLabs, type ScienceLab } from "./lab-data";
+import { SpeakButton, useAutoSpeak, useSpeakOnChange } from "./SpeechProvider";
 
 const SAFETY_ICON = { "Child can try": "🟢", "Grown-up nearby": "🟡", "Grown-up required": "🔴" } as const;
+
+export function labNarration(lab: ScienceLab) {
+  return [
+    lab.title,
+    `Safety level: ${lab.safety}.`,
+    lab.question,
+    `Prediction choices: ${lab.predictions.join(", ")}.`,
+    `You will need: ${lab.materials.join(", ")}.`,
+    ...lab.steps.map((step, index) => `Step ${index + 1}. ${step}`),
+    `What to observe: ${lab.observation}`,
+  ];
+}
 
 export default function ScienceLabBoard({ age, page, onComplete, onSelectLab }: { age: number; page: number; onComplete: () => void; onSelectLab: (page: number) => void }) {
   const lab = getScienceLab(age, page);
@@ -16,9 +28,14 @@ export default function ScienceLabBoard({ age, page, onComplete, onSelectLab }: 
     onComplete();
   };
 
-  // A lab is done away from the screen with a grown-up, so the safety level and
-  // materials matter as much as the question — read all three aloud on open.
-  useAutoSpeak([lab.title, `Safety level: ${lab.safety}.`, lab.question], lab.id);
+  useAutoSpeak([
+    lab.title,
+    `Safety level: ${lab.safety}.`,
+    lab.question,
+    `Prediction choices: ${lab.predictions.join(", ")}.`,
+    `You will need: ${lab.materials.join(", ")}.`,
+  ], lab.id);
+  useSpeakOnChange(prediction ? `Your prediction is: ${prediction}. Now test it safely.` : null);
 
   return (
     <div className="creative-board science-lab-board">
@@ -30,13 +47,7 @@ export default function ScienceLabBoard({ age, page, onComplete, onSelectLab }: 
           id={`lab-${lab.id}`}
           label="Read the lab"
           className="on-banner"
-          text={[
-            lab.title,
-            `Safety level: ${lab.safety}.`,
-            lab.question,
-            `You will need: ${lab.materials.join(", ")}.`,
-            ...lab.steps.map((step, index) => `Step ${index + 1}. ${step}`),
-          ]}
+          text={labNarration(lab)}
         />
       </header>
       <section className="lab-question">
@@ -49,8 +60,22 @@ export default function ScienceLabBoard({ age, page, onComplete, onSelectLab }: 
       </section>
       <div className="lab-grid">
         <section>
-          <article className="lab-card prediction-card"><span>2 · PREDICT</span><h4>What do you think?</h4><div>{lab.predictions.map((item) => <button key={item} className={prediction === item ? "active" : ""} onClick={() => setPrediction(item)}>{item}</button>)}</div><small>A prediction is not a grade. It is an idea to test.</small></article>
-          <article className="lab-card materials-card"><span>MATERIALS</span><ul>{lab.materials.map((item) => <li key={item}>{item}</li>)}</ul></article>
+          <article className="lab-card prediction-card">
+            <span>2 · PREDICT</span>
+            <div className="lab-card-head">
+              <h4>What do you think?</h4>
+              <SpeakButton id={`lab-predict-${lab.id}`} label="Hear choices" text={`Prediction choices: ${lab.predictions.join(", ")}.`} />
+            </div>
+            <div>{lab.predictions.map((item) => <button key={item} className={prediction === item ? "active" : ""} onClick={() => setPrediction(item)}>{item}</button>)}</div>
+            <small>A prediction is not a grade. It is an idea to test.</small>
+          </article>
+          <article className="lab-card materials-card">
+            <div className="lab-card-head">
+              <span>MATERIALS</span>
+              <SpeakButton id={`lab-materials-${lab.id}`} label="Hear materials" text={`You will need: ${lab.materials.join(", ")}.`} />
+            </div>
+            <ul>{lab.materials.map((item) => <li key={item}>{item}</li>)}</ul>
+          </article>
         </section>
         <section>
           <article className="lab-card steps-card">
@@ -65,7 +90,13 @@ export default function ScienceLabBoard({ age, page, onComplete, onSelectLab }: 
             </div>
             {lab.steps.map((step, index) => <label key={step}><input type="checkbox" checked={checked.includes(index)} onChange={() => setChecked((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index])} /><i>{index + 1}</i><p>{step}</p></label>)}
           </article>
-          <article className="lab-card observe-card"><span>4 · OBSERVE</span><p>{lab.observation}</p></article>
+          <article className="lab-card observe-card">
+            <div className="lab-card-head">
+              <span>4 · OBSERVE</span>
+              <SpeakButton id={`lab-observe-${lab.id}`} label="Hear observation" text={lab.observation} />
+            </div>
+            <p>{lab.observation}</p>
+          </article>
         </section>
       </div>
       <section className="lab-explain">

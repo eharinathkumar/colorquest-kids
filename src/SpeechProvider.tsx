@@ -1,28 +1,43 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  getSpeechVoices,
   isSpeechSupported,
   joinForSpeech,
   loadSpeechSettings,
-  rateForAge,
   saveSpeechSettings,
+  selectSpeechVoice,
   shouldAutoRead,
   speak,
   stopSpeaking,
+  voiceProfileForAge,
   type SpeechSettings,
+  type SpeechVoicePreference,
 } from "./speech";
+
+type SayOptions = {
+  /** Stable control id; only this control shows the stop state. */
+  id?: string;
+  onDone?: () => void;
+};
+
+export type SpeechVoiceOption = SpeechVoicePreference & {
+  lang: string;
+  localService: boolean;
+  default: boolean;
+};
 
 type SpeechContextValue = {
   settings: SpeechSettings;
   updateSettings: (patch: Partial<SpeechSettings>) => void;
-  /** True when this device can speak and the grown-up has left read-aloud on. */
   available: boolean;
-  /** True when a screen should read its main prompt aloud as it opens. */
   autoRead: boolean;
   ageWorld: number;
-  say: (text: string) => void;
+  /** Voices may arrive asynchronously after the first screen paints. */
+  voices: SpeechVoiceOption[];
+  selectedVoice: SpeechVoiceOption | null;
+  say: (text: string, options?: SayOptions) => boolean;
   stop: () => void;
   speakingId: string | null;
-  setSpeakingId: (id: string | null) => void;
 };
 
 const SpeechContext = createContext<SpeechContextValue | null>(null);
@@ -31,41 +46,96 @@ export function SpeechProvider({ ageWorld, children }: { ageWorld: number; child
   const [settings, setSettings] = useState<SpeechSettings>(() => loadSpeechSettings());
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const supported = useMemo(() => isSpeechSupported(), []);
+  const [nativeVoices, setNativeVoices] = useState<SpeechSynthesisVoice[]>(() => getSpeechVoices());
+  const requestRef = useRef(0);
+
+  useEffect(() => {
+    if (!supported) return undefined;
+    const refreshVoices = () => setNativeVoices(getSpeechVoices());
+    refreshVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", refreshVoices);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", refreshVoices);
+  }, [supported]);
+
+  const selectedNativeVoice = useMemo(
+    () => selectSpeechVoice(nativeVoices, ageWorld, settings.voice),
+    [nativeVoices, ageWorld, settings.voice],
+  );
+
+  const voices = useMemo<SpeechVoiceOption[]>(() => nativeVoices
+    .filter((voice) => /^en(?:[-_]|$)/i.test(voice.lang || ""))
+    .map((voice) => ({
+      voiceURI: voice.voiceURI || "",
+      name: voice.name || "Unnamed voice",
+      lang: voice.lang || "",
+      localService: voice.localService === true,
+      default: voice.default === true,
+    }))
+    .sort((first, second) => Number(second.localService) - Number(first.localService) || first.name.localeCompare(second.name)), [nativeVoices]);
+
+  const selectedVoice = useMemo<SpeechVoiceOption | null>(() => selectedNativeVoice ? {
+    voiceURI: selectedNativeVoice.voiceURI || "",
+    name: selectedNativeVoice.name || "Unnamed voice",
+    lang: selectedNativeVoice.lang || "",
+    localService: selectedNativeVoice.localService === true,
+    default: selectedNativeVoice.default === true,
+  } : null, [selectedNativeVoice]);
 
   const updateSettings = useCallback((patch: Partial<SpeechSettings>) => {
     setSettings((current) => {
       const next = { ...current, ...patch };
       saveSpeechSettings(next);
-      if (!next.enabled) stopSpeaking();
+      if (!next.enabled) {
+        requestRef.current += 1;
+        stopSpeaking();
+        setSpeakingId(null);
+      }
       return next;
     });
   }, []);
 
   const available = supported && settings.enabled;
 
-  const say = useCallback((text: string) => {
-    if (!available) return;
-    speak(text, { rate: rateForAge(settings, ageWorld) });
-  }, [available, settings, ageWorld]);
+  const say = useCallback((text: string, options: SayOptions = {}) => {
+    if (!available) return false;
+    const request = ++requestRef.current;
+    setSpeakingId(options.id || null);
+    const profile = voiceProfileForAge(settings, ageWorld);
+    const started = speak(text, {
+      rate: profile.rate,
+      pitch: profile.pitch,
+      voice: selectedNativeVoice,
+      onDone: () => {
+        if (requestRef.current !== request) return;
+        setSpeakingId(null);
+        options.onDone?.();
+      },
+    });
+    if (!started && requestRef.current === request) setSpeakingId(null);
+    return started;
+  }, [available, settings, ageWorld, selectedNativeVoice]);
 
   const stop = useCallback(() => {
+    requestRef.current += 1;
     stopSpeaking();
     setSpeakingId(null);
   }, []);
 
-  // Never leave a voice talking after the app is closed or backgrounded.
+  // A newly chosen voice should never switch midway through an utterance.
+  useEffect(() => stop, [settings.voice, stop]);
+
   useEffect(() => {
     const handleHidden = () => {
-      if (document.visibilityState === "hidden") stopSpeaking();
+      if (document.visibilityState === "hidden") stop();
     };
     document.addEventListener("visibilitychange", handleHidden);
-    window.addEventListener("pagehide", stopSpeaking);
+    window.addEventListener("pagehide", stop);
     return () => {
       document.removeEventListener("visibilitychange", handleHidden);
-      window.removeEventListener("pagehide", stopSpeaking);
-      stopSpeaking();
+      window.removeEventListener("pagehide", stop);
+      stop();
     };
-  }, []);
+  }, [stop]);
 
   const value = useMemo<SpeechContextValue>(() => ({
     settings,
@@ -73,19 +143,16 @@ export function SpeechProvider({ ageWorld, children }: { ageWorld: number; child
     available,
     autoRead: available && shouldAutoRead(settings, ageWorld),
     ageWorld,
+    voices,
+    selectedVoice,
     say,
     stop,
     speakingId,
-    setSpeakingId,
-  }), [settings, updateSettings, available, ageWorld, say, stop, speakingId]);
+  }), [settings, updateSettings, available, ageWorld, voices, selectedVoice, say, stop, speakingId]);
 
   return <SpeechContext.Provider value={value}>{children}</SpeechContext.Provider>;
 }
 
-/**
- * Components deep in the tree may render in tests without a provider; returning
- * an inert value keeps read-aloud strictly additive rather than load-bearing.
- */
 export function useSpeech(): SpeechContextValue {
   return useContext(SpeechContext) || {
     settings: loadSpeechSettings(),
@@ -93,35 +160,28 @@ export function useSpeech(): SpeechContextValue {
     available: false,
     autoRead: false,
     ageWorld: 1,
-    say: () => undefined,
+    voices: [],
+    selectedVoice: null,
+    say: () => false,
     stop: () => undefined,
     speakingId: null,
-    setSpeakingId: () => undefined,
   };
 }
 
-/**
- * A tap-to-hear speaker. Renders nothing when the device cannot speak or a
- * grown-up has turned read-aloud off, so no dead control is ever shown.
- */
 export function SpeakButton({
   text,
   id,
   label = "Listen",
   className = "",
 }: {
-  /** Fragments to read; empty ones are skipped and the rest joined with pauses. */
   text: Array<string | undefined | null> | string;
-  /** Stable id so only the button currently talking shows the stop state. */
   id: string;
   label?: string;
   className?: string;
 }) {
-  const { available, say, stop, speakingId, setSpeakingId, settings, ageWorld } = useSpeech();
+  const { available, say, stop, speakingId } = useSpeech();
   const spoken = useMemo(() => (Array.isArray(text) ? joinForSpeech(...text) : joinForSpeech(text)), [text]);
   const talking = speakingId === id;
-
-  useEffect(() => () => { if (talking) stopSpeaking(); }, [talking]);
 
   if (!available || !spoken) return null;
 
@@ -130,12 +190,9 @@ export function SpeakButton({
       stop();
       return;
     }
-    setSpeakingId(id);
-    speak(spoken, {
-      rate: rateForAge(settings, ageWorld),
-      onDone: () => setSpeakingId(null),
-    });
-    void say;
+    // `say` owns both the native utterance and the visual state. If a WebView
+    // rejects speech synchronously or never begins, it clears the button again.
+    say(spoken, { id });
   };
 
   return (
@@ -152,48 +209,40 @@ export function SpeakButton({
   );
 }
 
-/**
- * Speak coaching feedback the moment it appears — the "not quite, here is why"
- * line is the most important text on a puzzle screen and the least likely to be
- * read by the children who need it. Skips the first render so opening a screen
- * doesn't read its placeholder instruction twice.
- */
 export function useSpeakOnChange(message: string | undefined | null) {
-  const { autoRead, settings, ageWorld } = useSpeech();
-  const previous = useRef<string | null>(null);
+  const { autoRead, say } = useSpeech();
+  const previous = useRef("");
+  const initialized = useRef(false);
 
   useEffect(() => {
     const text = joinForSpeech(message || "");
-    if (!autoRead || !text) return;
-    if (previous.current === null) {
+    if (!autoRead) return;
+    if (!initialized.current) {
+      initialized.current = true;
       previous.current = text;
       return;
     }
+    if (!text) return;
     if (previous.current === text) return;
     previous.current = text;
-    speak(text, { rate: rateForAge(settings, ageWorld) });
-  }, [message, autoRead, settings, ageWorld]);
+    say(text);
+  }, [message, autoRead, say]);
 }
 
-/**
- * Read a screen's main prompt aloud when it opens, for children who cannot read.
- * Re-speaks whenever the content changes (a new lesson, puzzle or lab), and
- * cancels cleanly if the child navigates away mid-sentence.
- */
 export function useAutoSpeak(text: Array<string | undefined | null> | string, key: string) {
-  const { autoRead, settings, ageWorld } = useSpeech();
+  const { autoRead, say, stop } = useSpeech();
   const spoken = useMemo(() => (Array.isArray(text) ? joinForSpeech(...text) : joinForSpeech(text)), [text]);
   const lastKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (!autoRead || !spoken || lastKey.current === key) return undefined;
-    lastKey.current = key;
-    // A short delay lets the screen paint and the previous view's audio stop,
-    // so the child sees what is about to be read to them.
-    const timer = window.setTimeout(() => speak(spoken, { rate: rateForAge(settings, ageWorld) }), 350);
+    const timer = window.setTimeout(() => {
+      lastKey.current = key;
+      say(spoken);
+    }, 350);
     return () => {
       window.clearTimeout(timer);
-      stopSpeaking();
+      stop();
     };
-  }, [autoRead, spoken, key, settings, ageWorld]);
+  }, [autoRead, spoken, key, say, stop]);
 }

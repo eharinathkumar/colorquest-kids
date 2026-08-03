@@ -25,7 +25,8 @@ import { activityCount, activityUnit, COLORING_SCENE_COUNT } from "./content-cou
 import { artCredit, DiscoveryArt } from "./discovery-art";
 import { GrownUpGate } from "./GrownUpGate";
 import { SpeakButton, SpeechProvider, useAutoSpeak, useSpeech } from "./SpeechProvider";
-import { isSpeechSupported, speak } from "./speech";
+import { isSpeechSupported, voiceProfileForAge } from "./speech";
+import FifiGuide from "./FifiGuide";
 import { getBookSuggestions, getFavoriteInterest, getMentorRecommendations, INTERESTS } from "./mentor-data";
 import {
   ageWorldFor,
@@ -551,7 +552,10 @@ function DiscoveryBoard({ page, age, onComplete }: { page: number; age: number; 
   const [result, setResult] = useState("");
   const [completed, setCompleted] = useState(false);
 
-  useAutoSpeak([mission.topicTitle, mission.place, mission.fact], `discover-${age}-${page}`);
+  useAutoSpeak(
+    [mission.topicTitle, mission.place, mission.fact, mission.story, mission.imagine, mission.question],
+    `discover-${age}-${page}`,
+  );
 
   const check = () => {
     const correct = Number(answer) === mission.answer;
@@ -600,17 +604,20 @@ function DiscoveryBoard({ page, age, onComplete }: { page: number; age: number; 
           <h4>{mission.title}</h4>
           <p>{mission.story}</p>
           <strong>Draw or tell what happens next.</strong>
+          <SpeakButton id={`discover-story-${age}-${page}`} label="Hear story" text={[mission.title, mission.story]} />
         </article>
         <article className="think-card imagine-card">
           <span>🪄 IMAGINE</span>
           <h4>Make a world that never existed</h4>
           <p>{mission.imagine}</p>
           <strong>Use real science—even in an imaginary place.</strong>
+          <SpeakButton id={`discover-imagine-${age}-${page}`} label="Hear idea" text={mission.imagine} />
         </article>
         <article className="think-card math-card">
           <span>📐 SPACE & MAP MATH</span>
           <h4>Calculate the mission</h4>
           <p>{mission.question}</p>
+          <SpeakButton id={`discover-math-${age}-${page}`} label="Hear question" text={mission.question} />
           <div className="math-answer">
             <input inputMode="numeric" value={answer} onChange={(event) => setAnswer(event.target.value)} aria-label="Math challenge answer" />
             <button onClick={check}>Check</button>
@@ -672,6 +679,38 @@ function Studio({
   const total = activityCount(activity, age);
   const unit = activityUnit(activity);
   const [drawingUnsaved, setDrawingUnsaved] = useState(false);
+  const [pendingDrawingExit, setPendingDrawingExit] = useState<null | (() => void)>(null);
+  const [pendingStartOver, setPendingStartOver] = useState<null | (() => void)>(null);
+  const [fifiTipOpen, setFifiTipOpen] = useState(false);
+  const fifiMascot = `${import.meta.env.BASE_URL}mascot/fifi-color-spark.png`;
+
+  const fifiTips: Record<Activity, string> = {
+    draw: "Try one shape, one brush, and one color you have never combined before. New ideas often begin with a tiny experiment!",
+    color: "Colors do not have to copy real life. A purple ocean or golden elephant can begin a wonderful story.",
+    puzzle: "Slow thinking is strong thinking. Name the rule before you choose a piece.",
+    math: "If a number feels tricky, draw it, build it, or tell a small story about it.",
+    science: "Scientists are allowed to change their minds when new evidence appears. That is how learning grows.",
+    lab: "Make a prediction first. A surprising result is useful evidence, not a mistake.",
+    discover: "Look closely at the real place, then imagine one new detail that could still follow its science.",
+  };
+
+  useEffect(() => {
+    const key = `colorquest-fifi-tip-v1:${profile.id}:${activity}`;
+    try {
+      setFifiTipOpen(window.localStorage.getItem(key) !== "seen");
+    } catch {
+      setFifiTipOpen(true);
+    }
+  }, [profile.id, activity]);
+
+  const dismissFifiTip = () => {
+    try {
+      window.localStorage.setItem(`colorquest-fifi-tip-v1:${profile.id}:${activity}`, "seen");
+    } catch {
+      /* Private browsing may block storage; dismissing still works for this screen. */
+    }
+    setFifiTipOpen(false);
+  };
 
   /**
    * Leaving the Drawing Studio used to blank the canvas silently — and "Next
@@ -680,10 +719,8 @@ function Studio({
    */
   const guard = (action: () => void) => () => {
     if (activity === "draw" && drawingUnsaved && typeof window !== "undefined") {
-      const keep = window.confirm(
-        "Your picture is kept here so you can come back to it, but it is not in your gallery yet.\n\nLeave this page anyway?",
-      );
-      if (!keep) return;
+      setPendingDrawingExit(() => action);
+      return;
     }
     action();
   };
@@ -691,7 +728,7 @@ function Studio({
 
   return (
     <main className="studio-page">
-      <AppHeader compact profile={profile} onProfiles={onProfiles} onHome={onHome} onStart={() => onActivity("draw")} onParents={onParents} />
+      <AppHeader compact profile={profile} onProfiles={guard(onProfiles)} onHome={guard(onHome)} onStart={guard(() => onActivity("draw"))} onParents={guard(onParents)} />
       <div className="studio-shell">
         <aside className="studio-sidebar">
           <button className="back-home" onClick={guard(onHome)}>← Home</button>
@@ -723,13 +760,16 @@ function Studio({
             </div>
             <div className="page-picker">
               <button onClick={guard(() => onPage(page === 1 ? total : page - 1))} aria-label="Previous activity">←</button>
-              <label>{unit} <input type="number" min="1" max={total} value={page} onChange={(event) => onPage(Math.max(1, Math.min(total, Number(event.target.value))))} /> of {total}</label>
+              <label>{unit} <input type="number" min="1" max={total} value={page} onChange={(event) => {
+                const target = Math.max(1, Math.min(total, Number(event.target.value)));
+                guard(() => onPage(target))();
+              }} /> of {total}</label>
               <span className={`completion-marker ${completedHere ? "done" : ""}`}>{completedHere ? "✓ Done" : "In progress"}</span>
               <button onClick={guard(() => onPage(page === total ? 1 : page + 1))} aria-label="Next activity">→</button>
             </div>
           </div>
 
-          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onDirtyChange={setDrawingUnsaved} />}
+          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onDirtyChange={setDrawingUnsaved} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}
           {activity === "color" && <ColoringBoard key={`c-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}`} subject={activity} page={page} age={age} liked={profileProgress.learning.likedLessons.includes(getLearningLessons(activity, age)[page - 1].id)} onComplete={onComplete} onAttempt={() => onLearningAttempt(activity)} onLike={onLikeLesson} onSelectLesson={onPage} />}
@@ -740,6 +780,40 @@ function Studio({
             <div><span>🌟</span><p><strong>Creative reminder</strong><br />There is no wrong way to make art.</p></div>
             <button className="primary-button" onClick={guard(() => onPage(page === total ? 1 : page + 1))}>Next {unit.toLowerCase()} →</button>
           </div>
+
+          <FifiGuide
+            open={Boolean(pendingDrawingExit)}
+            mode="leave-drawing"
+            childName={profile.name}
+            mascotSrc={fifiMascot}
+            onStay={() => setPendingDrawingExit(null)}
+            onLeave={() => {
+              const action = pendingDrawingExit;
+              setPendingDrawingExit(null);
+              action?.();
+            }}
+          />
+          <FifiGuide
+            open={Boolean(pendingStartOver)}
+            mode="start-over"
+            childName={profile.name}
+            mascotSrc={fifiMascot}
+            onCancel={() => setPendingStartOver(null)}
+            onStartOver={() => {
+              const action = pendingStartOver;
+              setPendingStartOver(null);
+              action?.();
+            }}
+          />
+          <FifiGuide
+            open={fifiTipOpen && !pendingDrawingExit && !pendingStartOver}
+            mode="tip"
+            childName={profile.name}
+            mascotSrc={fifiMascot}
+            title="Fifi's creative spark"
+            message={fifiTips[activity]}
+            onDismiss={dismissFifiTip}
+          />
         </section>
       </div>
     </main>
@@ -747,14 +821,15 @@ function Studio({
 }
 
 /**
- * Grown-up controls for read-aloud. Speech is synthesised on the device by the
- * system voice, so this changes nothing about privacy — it is here because a
- * parent reading alongside a child may want the voice off, and because a child
- * who is learning to read benefits from a slower pace than a fluent one.
+ * Grown-up controls for read-aloud. ColorQuest never requests a microphone or
+ * records audio. The browser chooses whether a listed speech voice is installed
+ * locally or supplied by an operating-system service, which is why the picker
+ * labels that distinction instead of making an inaccurate offline promise.
  */
 function ReadAloudSettings() {
-  const { settings, updateSettings } = useSpeech();
+  const { settings, updateSettings, voices, selectedVoice, say, ageWorld } = useSpeech();
   const supported = isSpeechSupported();
+  const ageVoice = voiceProfileForAge(settings, ageWorld);
 
   return (
     <section className="read-aloud-settings">
@@ -762,9 +837,9 @@ function ReadAloudSettings() {
         <p className="eyebrow">Read aloud</p>
         <h2>Every screen can read itself out loud</h2>
         <p>
-          Children who cannot yet read can hear lessons, puzzles, labs and missions
-          spoken by this device&apos;s own voice. Nothing is recorded and nothing is
-          sent anywhere — the speech is produced offline, on the phone or tablet.
+          Children who cannot yet read can hear lessons, puzzles, labs and missions.
+          ColorQuest never records them and never asks for microphone access. Voice
+          availability and network use depend on the phone or browser&apos;s speech service.
         </p>
       </div>
 
@@ -804,6 +879,30 @@ function ReadAloudSettings() {
         ))}
       </fieldset>
 
+      <label className="setting-row setting-voice">
+        <span><strong>Voice</strong><small>Auto chooses the clearest available English voice. Installed voices usually work without a connection.</small></span>
+        <select
+          value={settings.voice?.voiceURI || settings.voice?.name || "auto"}
+          disabled={!supported || !settings.enabled || voices.length === 0}
+          onChange={(event) => {
+            if (event.target.value === "auto") {
+              updateSettings({ voice: null });
+              return;
+            }
+            const voice = voices.find((item) => (item.voiceURI || item.name) === event.target.value);
+            if (voice) updateSettings({ voice: { voiceURI: voice.voiceURI, name: voice.name } });
+          }}
+        >
+          <option value="auto">Auto — age-aware</option>
+          {voices.map((voice) => (
+            <option key={`${voice.voiceURI}:${voice.name}`} value={voice.voiceURI || voice.name}>
+              {voice.name} · {voice.localService ? "On-device" : "May use network"}
+            </option>
+          ))}
+        </select>
+        <em>{selectedVoice ? `${selectedVoice.name} · ${ageVoice.label}` : ageVoice.label}</em>
+      </label>
+
       <label className="setting-row setting-rate">
         <span><strong>Speaking speed</strong><small>Slower helps a child follow along word by word.</small></span>
         <input
@@ -821,7 +920,7 @@ function ReadAloudSettings() {
       <button
         className="tool-button"
         disabled={!supported || !settings.enabled}
-        onClick={() => speak("Hello! This is how ColorQuest will read to your child.", { rate: settings.rate })}
+        onClick={() => say(`Hello! I am Fifi. This is my ${ageVoice.label.toLowerCase()} reading voice.`)}
       >
         🔊 Hear a sample
       </button>

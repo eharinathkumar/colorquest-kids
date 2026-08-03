@@ -32,13 +32,17 @@ const FALLBACK_KEY = "colorquest-draft-fallback";
  * under version 1 survive untouched.
  */
 const VERSION = 2;
+let databasePromise: Promise<IDBDatabase> | null = null;
+const latestSave = new Map<string, CanvasDraft>();
+const activeSave = new Map<string, Promise<void>>();
 
 export function draftKey(profileId: string, activity: string, ageWorld: number, page: number) {
   return `${profileId}:${activity}:${ageWorld}:${page}`;
 }
 
 function openDatabase() {
-  return new Promise<IDBDatabase>((resolve, reject) => {
+  if (databasePromise) return databasePromise;
+  databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
     const request = window.indexedDB.open(DATABASE, VERSION);
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -50,9 +54,20 @@ function openDatabase() {
         database.createObjectStore(STORE, { keyPath: "id" });
       }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      database.onversionchange = () => {
+        database.close();
+        databasePromise = null;
+      };
+      resolve(database);
+    };
+    request.onerror = () => {
+      databasePromise = null;
+      reject(request.error);
+    };
   });
+  return databasePromise;
 }
 
 function fallbackMap(): Record<string, CanvasDraft> {
@@ -70,25 +85,39 @@ function fallbackMap(): Record<string, CanvasDraft> {
  */
 export async function saveDraft(draft: Omit<CanvasDraft, "updatedAt">): Promise<void> {
   const record: CanvasDraft = { ...draft, updatedAt: new Date().toISOString() };
-  try {
-    if (typeof window === "undefined") return;
-    if (typeof window.indexedDB === "undefined") {
-      const map = fallbackMap();
-      map[record.id] = record;
-      window.localStorage.setItem(FALLBACK_KEY, JSON.stringify(map));
-      return;
-    }
-    const database = await openDatabase();
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(STORE, "readwrite");
-      transaction.objectStore(STORE).put(record);
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-    });
-    database.close();
-  } catch {
-    /* storage unavailable or full — drawing continues normally */
-  }
+  latestSave.set(record.id, record);
+  const existing = activeSave.get(record.id);
+  if (existing) return existing;
+
+  const operation = (async () => {
+    let saved: CanvasDraft | undefined;
+    do {
+      saved = latestSave.get(record.id);
+      if (!saved) return;
+      try {
+        if (typeof window === "undefined") return;
+        if (typeof window.indexedDB === "undefined") {
+          const map = fallbackMap();
+          map[saved.id] = saved;
+          window.localStorage.setItem(FALLBACK_KEY, JSON.stringify(map));
+        } else {
+          const database = await openDatabase();
+          await new Promise<void>((resolve, reject) => {
+            const transaction = database.transaction(STORE, "readwrite");
+            transaction.objectStore(STORE).put(saved!);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+          });
+        }
+      } catch {
+        /* storage unavailable or full — drawing continues normally */
+      }
+    } while (latestSave.get(record.id) !== saved);
+    latestSave.delete(record.id);
+  })().finally(() => activeSave.delete(record.id));
+
+  activeSave.set(record.id, operation);
+  return operation;
 }
 
 export async function loadDraft(id: string): Promise<CanvasDraft | null> {
@@ -102,7 +131,6 @@ export async function loadDraft(id: string): Promise<CanvasDraft | null> {
       request.onsuccess = () => resolve((request.result as CanvasDraft) || null);
       request.onerror = () => reject(request.error);
     });
-    database.close();
     return draft;
   } catch {
     return null;
@@ -112,6 +140,8 @@ export async function loadDraft(id: string): Promise<CanvasDraft | null> {
 export async function deleteDraft(id: string): Promise<void> {
   try {
     if (typeof window === "undefined") return;
+    latestSave.delete(id);
+    await activeSave.get(id);
     if (typeof window.indexedDB === "undefined") {
       const map = fallbackMap();
       delete map[id];
@@ -125,7 +155,6 @@ export async function deleteDraft(id: string): Promise<void> {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
-    database.close();
   } catch {
     /* nothing to clean up */
   }

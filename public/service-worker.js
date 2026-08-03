@@ -1,4 +1,5 @@
-const VERSION = "colorquest-v2.0";
+const CACHE_PREFIX = "colorquest-";
+const VERSION = `${CACHE_PREFIX}v2.2`;
 const BASE = self.registration.scope;
 const SHELL = [
   BASE,
@@ -11,37 +12,60 @@ const SHELL = [
   `${BASE}icon-192.png`,
   `${BASE}icon-512.png`,
 ];
+const SHELL_URLS = new Set(SHELL.map((url) => new URL(url, BASE).href));
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)));
+  // Asset names are deliberately stable. Force a network revalidation during
+  // installation so the new versioned cache cannot inherit an old app.js or
+  // app.css response from the browser's HTTP cache.
+  event.waitUntil(
+    caches.open(VERSION).then((cache) =>
+      cache.addAll(SHELL.map((url) => new Request(url, { cache: "reload" }))),
+    ),
+  );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== VERSION).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== VERSION)
+          .map((key) => caches.delete(key)),
+      ))
       .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const url = new URL(event.request.url);
+
+  // Never copy third-party responses into a child's offline cache. Core
+  // ColorQuest content is local; grown-up-approved links open separately.
+  if (url.origin !== self.location.origin) return;
 
   if (event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request).catch(() => caches.match(`${BASE}index.html`)));
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(VERSION).then((cache) => cache.put(`${BASE}index.html`, copy)));
+          }
+          return response;
+        })
+        .catch(() => caches.match(`${BASE}index.html`)),
+    );
     return;
   }
 
+  // The complete offline shell is pre-cached. Avoid an unbounded runtime
+  // cache by leaving every other same-origin request to the network.
+  if (!SHELL_URLS.has(url.href)) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200) return response;
-        const copy = response.clone();
-        caches.open(VERSION).then((cache) => cache.put(event.request, copy));
-        return response;
-      });
-    }),
+    caches.match(event.request).then((cached) => cached || fetch(event.request)),
   );
 });

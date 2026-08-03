@@ -139,6 +139,25 @@ describe("ColorQuest core journeys", () => {
     expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
   });
 
+  it("uses Fifi instead of a browser alert before leaving a drawing", async () => {
+    const user = userEvent.setup();
+    const browserConfirm = vi.spyOn(window, "confirm");
+    render(<ColorQuestApp />);
+    await user.click(screen.getAllByRole("button", { name: "Start creating" })[0]);
+
+    const canvas = screen.getByLabelText("Free drawing canvas");
+    fireEvent.pointerDown(canvas, { clientX: 60, clientY: 80, pointerId: 7 });
+    fireEvent.pointerMove(canvas, { clientX: 110, clientY: 120, pointerId: 7 });
+    fireEvent.pointerUp(canvas, { clientX: 110, clientY: 120, pointerId: 7 });
+    await user.click(screen.getByRole("button", { name: "Grown-ups" }));
+
+    expect(browserConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Your picture is safe, Maya!" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Stay & draw" }));
+    expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
+    browserConfirm.mockRestore();
+  });
+
   it("saves privately, then lets a parent use Android's native save/share sheet", async () => {
     const user = userEvent.setup();
     vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);

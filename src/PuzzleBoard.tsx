@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { buildPuzzle, type PuzzleDefinition } from "./puzzle-data";
+import { getPuzzle, type PuzzleDefinition } from "./puzzle-data";
 import { SpeakButton, useAutoSpeak, useSpeakOnChange } from "./SpeechProvider";
 
 const FAMILY_LABELS = {
@@ -16,6 +16,20 @@ function stableShuffle<T extends { label: string }>(items: T[], seed: string) {
   const shuffled = [...items].sort((first, second) => score(first.label) - score(second.label));
   if (shuffled.every((item, index) => item === items[index])) shuffled.reverse();
   return shuffled;
+}
+
+/** Names every interactive option so narration is useful without the icons. */
+export function puzzleChoiceNarration(puzzle: PuzzleDefinition): string {
+  if (puzzle.kind === "match") {
+    return `Pieces: ${puzzle.pairs.map((pair) => pair.label).join(", ")}. Partners: ${puzzle.pairs.map((pair) => pair.homeLabel).join(", ")}.`;
+  }
+  if (puzzle.kind === "sort") {
+    return `Items to sort: ${puzzle.items.map((item) => item.label).join(", ")}. Categories: ${puzzle.categories.join(" and ")}.`;
+  }
+  if (puzzle.kind === "sequence") {
+    return `Steps to choose from: ${puzzle.steps.map((step) => step.label).join(", ")}.`;
+  }
+  return `${puzzle.prompt}. Your choices are: ${puzzle.options.map((option) => option.label).join(", ")}.`;
 }
 
 function PuzzleHeader({ puzzle, message }: { puzzle: PuzzleDefinition; message: string }) {
@@ -43,7 +57,7 @@ function PuzzleHeader({ puzzle, message }: { puzzle: PuzzleDefinition; message: 
           <strong>{puzzle.title}</strong>
           <p>{message}</p>
         </div>
-        <SpeakButton id={`puzzle-${puzzle.id}`} label="Read puzzle" text={[puzzle.title, message, strategy]} />
+        <SpeakButton id={`puzzle-${puzzle.id}`} label="Read puzzle" text={[puzzle.title, message, puzzleChoiceNarration(puzzle), strategy]} />
       </div>
       <details className="puzzle-coach">
         <summary>💡 Show me how to think about this</summary>
@@ -219,10 +233,14 @@ function ChoicePuzzle({ puzzle, onComplete }: { puzzle: Extract<PuzzleDefinition
 }
 
 export default function PuzzleBoard({ page, age, onComplete }: { page: number; age: number; onComplete: () => void }) {
-  const puzzle = buildPuzzle(page, age);
-  useAutoSpeak([puzzle.title, puzzle.instruction], puzzle.id);
+  // The counter is derived from the deduplicated deck, so the visible board
+  // must use that same deck. Calling buildPuzzle here used to bypass the
+  // deduplication and made children encounter repeats before the advertised
+  // final page.
+  const puzzle = getPuzzle(page, age);
+  useAutoSpeak([puzzle.title, puzzle.instruction, puzzleChoiceNarration(puzzle)], puzzle.id);
   return (
-    <div className="creative-board puzzle-board varied-puzzle">
+    <div className="creative-board puzzle-board varied-puzzle" data-puzzle-id={puzzle.id}>
       {puzzle.kind === "match" && <MatchPuzzle puzzle={puzzle} onComplete={onComplete} />}
       {puzzle.kind === "sort" && <SortPuzzle puzzle={puzzle} onComplete={onComplete} />}
       {puzzle.kind === "sequence" && <SequencePuzzle puzzle={puzzle} onComplete={onComplete} />}

@@ -456,6 +456,7 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 
 /* v1.2 expressive drawing studio */
 .drawing-studio-v2 { padding: 13px; overflow: hidden; }
+.mobile-art-dock { display: none; }
 .art-tool-section { margin-bottom: 10px; padding: 12px; border: 1px solid #dce6ec; border-radius: 19px; background: #f8fbfd; }
 .tool-section-title { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .tool-section-title > span { font-size: 24px; }
@@ -633,6 +634,27 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
   .profile-grid { grid-template-columns: 1fr; }
   .profile-grid > button { min-height: 190px; }
   .profile-setup-card, .profile-hub-card { padding: 24px 16px; border-radius: 25px; }
+  .drawing-studio-v2 { display: flex; flex-direction: column; padding: 8px; overflow: visible; }
+  .drawing-studio-v2 .canvas-stage.advanced { order: 1; min-height: min(58svh, 560px); }
+  .mobile-art-dock {
+    order: 2; position: sticky; z-index: 12; bottom: max(8px, env(safe-area-inset-bottom));
+    margin: 9px 2px; padding: 6px; border: 1px solid #d9e5ee; border-radius: 18px;
+    background: #fffffff2; box-shadow: 0 12px 30px #173b6d2a;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; backdrop-filter: blur(12px);
+  }
+  .mobile-art-dock button {
+    min-height: 52px; padding: 5px; border: 2px solid transparent; border-radius: 13px;
+    background: transparent; color: var(--navy); display: grid; place-items: center; gap: 2px;
+    font-weight: 850;
+  }
+  .mobile-art-dock button span { font-size: 21px; line-height: 1; }
+  .mobile-art-dock button small { font-size: 9px; }
+  .mobile-art-dock button.active { border-color: var(--teal); background: #e2f8f2; }
+  .drawing-studio-v2 .mobile-tool-panel { display: none; order: 3; }
+  .drawing-studio-v2 .mobile-tool-panel.mobile-active { display: block; }
+  .drawing-studio-v2 > .canvas-tip,
+  .drawing-studio-v2 > .draft-restored,
+  .drawing-studio-v2 > .success-toast { order: 4; }
   .art-tool-section { padding: 9px; }
   .tool-section-title { flex-wrap: wrap; }
   .tool-section-title small { width: 100%; }
@@ -641,7 +663,9 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
   .stroke-size-studio { width: 100%; min-width: 0; }
   .art-options-row .save-button { width: 100%; }
   .shape-picker > label { width: 100%; margin-left: 0; }
-  .canvas-stage.advanced { min-height: 500px; }
+  .canvas-stage.advanced { min-height: min(58svh, 560px); }
+  .canvas-stage.advanced .prompt-card { max-width: calc(100% - 28px); padding: 9px 12px; }
+  .canvas-stage.advanced .prompt-card small { display: none; }
   .profile-management, .artwork-gallery { padding: 18px 12px; }
   .profile-manage-grid { grid-template-columns: 1fr; }
   .gallery-heading { align-items: stretch; flex-direction: column; }
@@ -731,6 +755,14 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .setting-rate { align-items: center; flex-wrap: wrap; }
 .setting-rate input[type="range"] { flex: 1 1 180px; accent-color: #24bca4; }
 .setting-rate em { font-style: normal; font-weight: 800; color: #24bca4; min-width: 56px; }
+.setting-voice { align-items: center; flex-wrap: wrap; }
+.setting-voice > span { flex: 1 1 260px; }
+.setting-voice select {
+  flex: 1 1 230px; min-height: 44px; max-width: 420px; padding: 9px 38px 9px 12px;
+  border: 2px solid #cfe0f2; border-radius: 12px; background: #fff; color: var(--navy, #173b6d);
+  font: inherit; font-weight: 750;
+}
+.setting-voice em { flex: 0 0 100%; font-style: normal; color: #24a88f; font-size: 13px; font-weight: 800; }
 
 /* ---------- Grown-up gate ---------- */
 .gate-sum {

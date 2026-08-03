@@ -9,15 +9,21 @@ export type SavedArtwork = {
 const DATABASE = "colorquest-artwork-v1";
 const STORE = "artworks";
 const FALLBACK_KEY = "colorquest-artwork-fallback";
+const VERSION = 2;
 
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = window.indexedDB.open(DATABASE, 1);
+    const request = window.indexedDB.open(DATABASE, VERSION);
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(STORE)) {
         const store = database.createObjectStore(STORE, { keyPath: "id" });
         store.createIndex("profileId", "profileId", { unique: false });
+      }
+      // Drawing drafts share this database. Creating both stores from either
+      // opener prevents a VersionError when the gallery is used after a draft.
+      if (!database.objectStoreNames.contains("drafts")) {
+        database.createObjectStore("drafts", { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);

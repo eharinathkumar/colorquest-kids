@@ -1,14 +1,15 @@
 # ColorQuest Kids test report
 
-Date: August 2, 2026  
-Build: Android 2.0 (`versionCode` 4)  
+Date: August 3, 2026  
+Build target: Android 2.2 (`versionCode` 5)  
 Application ID: `com.harinath.colorquestkids`
 
-## Passed automated checks
+## Automated result
 
-- TypeScript production compilation
-- Vite web production build
-- Vite Android production build with relative asset paths
+**PASS — 44 of 44 automated tests across four test files.** The fully integrated source passed `npm run check` on August 3, 2026: TypeScript compilation completed and both the GitHub Pages and Android-targeted Vite builds succeeded. `npm audit --omit=dev` reported **0 vulnerabilities**, and `npm run android:sync` copied the final Android build and Fifi mascot into the native project without errors.
+
+Coverage includes:
+
 - Home-to-studio navigation
 - First-profile onboarding and age-to-world routing
 - Per-profile resume location and unique completion tracking
@@ -22,8 +23,10 @@ Application ID: `com.harinath.colorquestkids`
 - Parent-gated Android native save/share flow
 - Coloring interaction
 - Android native save/share flow
-- Six puzzle mechanics rotate in every six-activity block for all four age worlds
-- At least six visibly different challenges per puzzle mechanic in the tested 60-page window
+- Six puzzle mechanics rotate across all four age worlds
+- The advertised puzzle count equals the deduplicated deck for every age world
+- Every advertised puzzle page maps one-to-one onto a unique reachable puzzle before the deck repeats
+- The visible Puzzle Board uses the deduplicated deck rather than the repeating raw generator
 - Studio navigation changes correctly from matching to sorting to sequencing
 - 64 complete guided lessons: eight Math and eight Science concepts in each age world
 - Every guided lesson has three answer choices, a valid answer, explanation, vocabulary, and off-screen activity
@@ -35,12 +38,28 @@ Application ID: `com.harinath.colorquestkids`
 - Lab explanation remains locked until a prediction and all safe steps are checked
 - 400 distinct Discovery Lab titles for ages 7–9
 - 400 distinct Discovery Lab titles for ages 10–12
-- 400 distinct Discovery Lab image queries and stories for both older age groups
+- 400 distinct Discovery Lab stories for both older age groups
 - Valid math question and numeric answer for every Discovery Lab mission
-- Production dependency audit: zero known vulnerabilities
-- Capacitor Android asset and plugin synchronization
+- Deterministic local Discovery illustration selection, credit, and rendering without live image requests
+- Read-aloud text cleanup, mathematical notation, age pacing, automatic-reading rules, and safe unsupported-device behavior
+- Randomized grown-up gate challenges
+- Drawing-draft keying, saving, and restoration
+- Fifi's drawing-exit, start-over, tip, focus-management, and image-fallback behavior
+- Dirty drawings route through Fifi instead of a browser-origin confirmation alert
+- Age-aware voice selection, local/remote metadata, stale-callback recovery, and narration coverage for puzzles and labs
 
-Automated result: **17 tests passed, 0 failed**.
+## Reproduce the automated run
+
+Run these commands after all v2.2 work is integrated:
+
+```bash
+npm ci
+npm run check
+npm run build:android
+npm audit --omit=dev
+```
+
+The final verification found no `.map` files in either `dist/` or the synchronized `android/app/src/main/assets/public/` directory. Run `npm run android:sync` only after any future web changes are approved.
 
 ## Android configuration checks
 
@@ -53,9 +72,13 @@ Automated result: **17 tests passed, 0 failed**.
 - No advertising SDK, analytics SDK, login, camera, microphone, location, contacts, or broad storage access
 - Nickname, age, progress, voluntary interest signals, and artwork remain in WebView storage/IndexedDB on the device
 - Parent-gated artwork export uses an app-private cache file and Android system share sheet
+- Production source-map generation disabled in Vite
+- Release R8 minification and Android resource shrinking enabled
+- Version set to 2.2 / code 5
+- Offline cache namespace set to v2.2, with forced asset revalidation and no third-party/runtime response caching
 
-## Remaining physical-device checks
+## Remaining release and physical-device checks
 
-The native Gradle compile and emulator run could not be performed in the packaging workspace because it does not contain Android Studio/SDK and cannot download Gradle from `services.gradle.org`. Open the included `android/` project in Android Studio and complete the checklist in `ANDROID_RELEASE.md` before closed testing.
+The signed native release bundle, R8/resource-shrinker output, and emulator run must be verified in Android Studio. The native Gradle compile could not run in this packaging environment because its Gradle distribution was not cached and outbound access to `services.gradle.org` was unavailable; this is an environment limitation, not a source/build error. Open the included `android/` project, allow Android Studio to download Gradle, and complete the checklist in `ANDROID_RELEASE.md` before closed testing.
 
-Physical phone/tablet verification is required for touch accuracy, rotation, Science Lab readability, system share-sheet saving, app resume, airplane-mode behavior, and Android System WebView compatibility.
+Physical phone/tablet verification is required for touch accuracy, rotation, Fifi's leave/start-over dialogs, voice availability and quality, Science Lab readability, system share-sheet saving, app resume, offline update behavior, airplane-mode behavior, and Android System WebView compatibility.

@@ -18,13 +18,20 @@ function InstallableApp() {
     };
     window.addEventListener("beforeinstallprompt", handlePrompt);
 
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register(`${import.meta.env.BASE_URL}service-worker.js`).catch(() => undefined);
-      }, { once: true });
-    }
+    const registerServiceWorker = () => {
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker
+        .register(`${import.meta.env.BASE_URL}service-worker.js`, { updateViaCache: "none" })
+        .then((registration) => registration.update())
+        .catch(() => undefined);
+    };
+    if (document.readyState === "complete") registerServiceWorker();
+    else window.addEventListener("load", registerServiceWorker, { once: true });
 
-    return () => window.removeEventListener("beforeinstallprompt", handlePrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handlePrompt);
+      window.removeEventListener("load", registerServiceWorker);
+    };
   }, []);
 
   const install = async () => {

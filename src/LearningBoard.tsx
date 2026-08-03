@@ -4,7 +4,6 @@ import { getCuratedResource, getLessonGuide, INTERESTS } from "./mentor-data";
 import type { InterestKey } from "./profile-data";
 import { GrownUpGate } from "./GrownUpGate";
 import { SpeakButton, useAutoSpeak, useSpeech } from "./SpeechProvider";
-import { rateForAge, speak, stopSpeaking } from "./speech";
 
 const AGE_LABELS = ["Ages 1–3", "Ages 4–6", "Ages 7–9", "Ages 10–12"];
 
@@ -19,7 +18,7 @@ function readingMs(text: string) {
 }
 
 function ConceptStory({ slides, lessonId }: { slides: Array<{ icon: string; label: string; text: string }>; lessonId: string }) {
-  const { available, settings, ageWorld } = useSpeech();
+  const { available, say, stop } = useSpeech();
   const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [slide, setSlide] = useState(0);
@@ -39,27 +38,24 @@ function ConceptStory({ slides, lessonId }: { slides: Array<{ icon: string; labe
     // When read-aloud is on, the narration sets the pace and the slide turns
     // when the sentence finishes — so the picture always matches the voice.
     if (available) {
-      const started = speak(current.text, {
-        rate: rateForAge(settings, ageWorld),
-        onDone: advance,
-      });
-      if (started) return () => stopSpeaking();
+      const started = say(current.text, { onDone: advance });
+      if (started) return stop;
     }
 
     const timer = window.setTimeout(advance, readingMs(current.text));
     return () => window.clearTimeout(timer);
-  }, [open, playing, slide, slides.length, current.text, available, settings, ageWorld]);
+  }, [open, playing, slide, slides.length, current.text, available, say, stop]);
 
   // Reset when the lesson changes underneath us.
   useEffect(() => {
     setOpen(false);
     setPlaying(false);
     setSlide(0);
-    stopSpeaking();
-  }, [lessonId]);
+    stop();
+  }, [lessonId, stop]);
 
   const stopAndSet = (next: number) => {
-    stopSpeaking();
+    stop();
     setPlaying(false);
     setSlide(next);
   };
@@ -80,11 +76,11 @@ function ConceptStory({ slides, lessonId }: { slides: Array<{ icon: string; labe
       </div>
       <div className="story-controls">
         <button onClick={() => stopAndSet(Math.max(0, slide - 1))} aria-label="Previous concept story slide">←</button>
-        <button onClick={() => { if (playing) stopSpeaking(); setPlaying((value) => !value); }}>
+        <button onClick={() => { if (playing) stop(); setPlaying((value) => !value); }}>
           {playing ? "Pause" : slide === slides.length - 1 ? "Replay" : "Play"}
         </button>
         <button onClick={() => stopAndSet(Math.min(slides.length - 1, slide + 1))} aria-label="Next concept story slide">→</button>
-        <button className="close-story" onClick={() => { stopSpeaking(); setOpen(false); setPlaying(false); }}>Close</button>
+        <button className="close-story" onClick={() => { stop(); setOpen(false); setPlaying(false); }}>Close</button>
       </div>
       <div className="story-dots">{slides.map((item, index) => <i key={item.label} className={index === slide ? "active" : ""} />)}</div>
     </article>
