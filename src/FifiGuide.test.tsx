@@ -87,4 +87,14 @@ describe("FifiGuide", () => {
     expect(document.body.querySelector(".fifi-mouth")).toBeTruthy();
     expect(container).toBeTruthy();
   });
+
+  it("keeps the entrance wrapper separate from Fifi's talking image", () => {
+    render(<FifiGuide open mode="tip" mascotSrc="/fifi-mascot.png" message="Hello!" onDismiss={() => undefined} />);
+    const wrapper = document.body.querySelector(".fifi-mascot");
+    const image = document.body.querySelector(".fifi-mascot-image");
+
+    expect(wrapper).toBeTruthy();
+    expect(image).toBeTruthy();
+    expect(wrapper?.contains(image)).toBe(true);
+  });
 });

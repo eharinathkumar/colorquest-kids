@@ -1,12 +1,12 @@
 # ColorQuest Kids test report
 
-Date: August 3, 2026  
-Build target: Android 2.3 (`versionCode` 6)  
+Date: August 4, 2026  
+Build target: Android 2.3.1 (`versionCode` 7)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
 
-**PASS — 46 of 46 automated tests across four test files.** The fully integrated source passed `npm run check` on August 3, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after every 2.3 source change.
+**PASS — 47 of 47 automated tests across four test files.** The fully integrated source passed `npm run check` on August 4, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the 2.3.1 Fifi QC fix.
 
 Coverage includes:
 
@@ -49,10 +49,11 @@ Coverage includes:
 - Age-aware voice selection, local/remote metadata, stale-callback recovery, and narration coverage for puzzles and labs
 - Fifi's comic speech bubble and talking-mouth layer render with his local mascot art
 - The active child receives one age-aware Fifi welcome per app session
+- Fifi's free-floating entrance wrapper remains independent from the talking image animation
 
 ## Reproduce the automated run
 
-Run these commands after all v2.3 work is integrated:
+Run these commands after all v2.3.1 work is integrated:
 
 ```bash
 npm ci
@@ -62,6 +63,8 @@ npm audit --omit=dev
 ```
 
 The final verification found no `.map` files in either `dist/` or the synchronized `android/app/src/main/assets/public/` directory. Run `npm run android:sync` only after any future web changes are approved.
+
+The built GitHub Pages preview also returned the local Fifi PNG and the compiled CSS containing both the repaired entrance and idle-float animations. A static rule check confirmed that speaking no longer overrides the mascot wrapper's entrance animation.
 
 ## Android configuration checks
 
@@ -76,8 +79,8 @@ The final verification found no `.map` files in either `dist/` or the synchroniz
 - Parent-gated artwork export uses an app-private cache file and Android system share sheet
 - Production source-map generation disabled in Vite
 - Release R8 minification and Android resource shrinking enabled
-- Version set to 2.3 / code 6
-- Offline cache namespace set to v2.3, with forced asset revalidation and no third-party/runtime response caching
+- Version set to 2.3.1 / code 7
+- Offline cache namespace set to v2.3.1, with forced asset revalidation and no third-party/runtime response caching
 
 ## Remaining release and physical-device checks
 

@@ -176,7 +176,9 @@ function Home({
   const recommendations = getMentorRecommendations(age, profileProgress);
   const favorite = getFavoriteInterest(profileProgress);
   const progress = completedCount(profileProgress);
-  const welcomeKey = `colorquest-fifi-welcome-v1:${profile.id}`;
+  // Version the greeting flag so every material Fifi upgrade is visible once
+  // after deployment instead of being hidden by an older session marker.
+  const welcomeKey = `colorquest-fifi-welcome-v3:${profile.id}`;
   const [fifiWelcomeOpen, setFifiWelcomeOpen] = useState(() => {
     try {
       return window.sessionStorage.getItem(welcomeKey) !== "seen";

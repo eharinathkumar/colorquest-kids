@@ -53,12 +53,15 @@
   align-self: start;
   aspect-ratio: 1;
   min-width: 0;
-  background: linear-gradient(145deg, #fff2b8, #ffd3e1);
-  border: 3px solid #fff;
-  border-radius: 42% 58% 48% 52%;
-  box-shadow: 0 9px 20px rgb(59 53 117 / 16%);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   transform: rotate(-3deg);
-  animation: fifi-mascot-hop 720ms cubic-bezier(.22, .9, .3, 1.18) 90ms both;
+  filter: drop-shadow(0 10px 9px rgb(32 47 96 / 20%));
+  animation:
+    fifi-mascot-arrive 1.65s cubic-bezier(.2, .88, .25, 1.08) 80ms both,
+    fifi-idle-float 2.1s ease-in-out 1.75s 5;
 }
 
 .fifi-mascot-image {
@@ -66,7 +69,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: inherit;
+  border-radius: 0;
 }
 
 /* The original raster stays untouched. This tiny overlay covers only Fifi's
@@ -104,7 +107,8 @@
   animation: fifi-mouth-talk 260ms steps(1, end) infinite;
 }
 
-.fifi-is-talking {
+.fifi-is-talking .fifi-mascot-image,
+.fifi-is-talking .fifi-mascot-placeholder {
   animation: fifi-talk-bob 620ms ease-in-out infinite;
 }
 
@@ -231,7 +235,7 @@
 .fifi-tip {
   position: relative;
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: 13px;
   align-items: start;
   padding: 4px;
@@ -245,7 +249,8 @@
 }
 
 .fifi-mascot-small {
-  width: 74px;
+  width: 104px;
+  margin: -18px -7px 0 -8px;
 }
 
 .fifi-mascot-small .fifi-mascot-placeholder {
@@ -326,11 +331,18 @@
   100% { opacity: 1; transform: translate(0) rotate(0) scale(1); }
 }
 
-@keyframes fifi-mascot-hop {
-  0% { opacity: 0; transform: translateY(28px) rotate(10deg) scale(.68); }
-  48% { opacity: 1; transform: translateY(-13px) rotate(-7deg) scale(1.08); }
-  72% { transform: translateY(4px) rotate(2deg) scale(.97); }
-  100% { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1); }
+@keyframes fifi-mascot-arrive {
+  0% { opacity: 0; transform: translate(125px, 65px) rotate(24deg) scale(.42); }
+  32% { opacity: 1; transform: translate(-15px, -34px) rotate(-14deg) scale(1.12); }
+  52% { transform: translate(8px, 8px) rotate(7deg) scale(.94); }
+  70% { transform: translate(-5px, -16px) rotate(-6deg) scale(1.05); }
+  86% { transform: translate(3px, 3px) rotate(2deg) scale(.98); }
+  100% { opacity: 1; transform: translate(0) rotate(-3deg) scale(1); }
+}
+
+@keyframes fifi-idle-float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-9px) rotate(3deg); }
 }
 
 @keyframes fifi-talk-bob {
@@ -376,6 +388,15 @@
     right: 10px;
     bottom: max(10px, env(safe-area-inset-bottom));
     width: calc(100vw - 20px);
+  }
+
+  .fifi-tip {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .fifi-mascot-small {
+    width: 88px;
+    margin: -10px -7px 0 -5px;
   }
 }
 

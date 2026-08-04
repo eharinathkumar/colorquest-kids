@@ -1,10 +1,14 @@
-# ColorQuest Kids 2.3 release summary
+# ColorQuest Kids 2.3.1 Fifi QC hotfix
 
 Release date: August 3, 2026  
-Web version: 2.3.0  
-Android version: 2.3 (`versionCode` 6)
+Web version: 2.3.1  
+Android version: 2.3.1 (`versionCode` 7)
 
 ## Headline changes
+
+- **Fifi movement repaired:** speaking no longer replaces the entrance animation; Fifi performs a visible multi-hop and then gently floats.
+- **Fifi is unboxed:** the old colored mascot tile, border, and tile shadow have been removed, leaving only the character and a soft drop shadow.
+- **Fresh rollout:** the greeting marker and offline cache are versioned again so returning testers receive the corrected animation after deployment.
 
 - **Fifi the Color Spark:** original local mascot art and accessible in-app guidance for drawing exits, autosave, start-over, and one-time creative tips.
 - **Fifi comes alive:** short hop-in greeting, comic speech callout, synchronized mouth pose, and a cuter character voice layered over the existing age-aware narration.
@@ -17,10 +21,11 @@ Android version: 2.3 (`versionCode` 6)
 
 ## Verified here
 
-- `npm run check`: **46/46 tests passed**, TypeScript passed, production web build passed.
+- `npm run check`: **47/47 tests passed**, TypeScript passed, production web build passed.
 - `npm audit --omit=dev`: **0 vulnerabilities**.
 - `npm run android:sync`: Android-targeted web build passed and copied successfully.
 - No `.map` files in the web or Android asset bundles.
+- Built GitHub Pages preview served Fifi's local art and the repaired entrance/float CSS successfully.
 
 ## Still required on your computer
 
