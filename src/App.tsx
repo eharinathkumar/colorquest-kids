@@ -16,11 +16,12 @@ import ArtworkGallery from "./ArtworkGallery";
 import DrawingStudio from "./DrawingStudio";
 import LearningBoard from "./LearningBoard";
 import ScienceLabBoard from "./ScienceLab";
+import StorybookBoard from "./StorybookBoard";
 import { ProfileHub, ProfileSetup } from "./ProfileViews";
 import VariedPuzzleBoard from "./PuzzleBoard";
 import { addArtwork } from "./artwork-store";
-import { getLearningLessons, type Subject } from "./learning-data";
-import { getScienceLabs } from "./lab-data";
+import { getLearningLessons, LEARNING_COUNTS, type Subject } from "./learning-data";
+import { getScienceLabs, LAB_COUNTS } from "./lab-data";
 import { activityCount, activityUnit, COLORING_SCENE_COUNT } from "./content-counts";
 import { artCredit, DiscoveryArt } from "./discovery-art";
 import { GrownUpGate } from "./GrownUpGate";
@@ -87,6 +88,7 @@ const ACTIVITY_META: Record<Activity, { icon: string; title: string; copy: strin
   draw: { icon: "✏️", title: "Draw", copy: "A blank canvas for every idea" },
   color: { icon: "🎨", title: "Color", copy: `${COLORING_SCENE_COUNT} scenes to fill with color` },
   puzzle: { icon: "🧩", title: "Build puzzles", copy: "Match, sort, sequence, reason" },
+  stories: { icon: "📚", title: "Storybooks", copy: "Funny picture stories read aloud" },
   math: { icon: "🧮", title: "Math", copy: "Big ideas made visible" },
   science: { icon: "🧪", title: "Science", copy: "Ask, observe, explain" },
   lab: { icon: "🥼", title: "Science Lab", copy: "Predict, test safely, explain" },
@@ -178,7 +180,7 @@ function Home({
   const progress = completedCount(profileProgress);
   // Version the greeting flag so every material Fifi upgrade is visible once
   // after deployment instead of being hidden by an older session marker.
-  const welcomeKey = `colorquest-fifi-welcome-v3:${profile.id}`;
+  const welcomeKey = `colorquest-fifi-welcome-v4:${profile.id}`;
   const [fifiWelcomeOpen, setFifiWelcomeOpen] = useState(() => {
     try {
       return window.sessionStorage.getItem(welcomeKey) !== "seen";
@@ -252,7 +254,7 @@ function Home({
 
       <section className="activity-section" id="activities">
         <div className="activity-grid">
-          {(Object.keys(ACTIVITY_META) as Activity[]).map((key) => (
+          {(Object.keys(ACTIVITY_META) as Activity[]).filter((key) => (age < 2 ? key !== "discover" : key !== "stories")).map((key) => (
             <button className="activity-card" key={key} onClick={() => onStart(key)}>
               <span className="activity-icon">{ACTIVITY_META[key].icon}</span>
               <span>
@@ -284,9 +286,9 @@ function Home({
 
       <section className="learning-strip">
         <div><span>4</span><small>age-adapted worlds</small></div>
-        <div><span>7</span><small>ways to create and learn</small></div>
-        <div><span>64</span><small>guided math &amp; science concepts</small></div>
-        <div><span>32</span><small>hands-on science labs</small></div>
+        <div><span>8</span><small>ways to create and learn</small></div>
+        <div><span>{LEARNING_COUNTS.total}</span><small>guided math &amp; science concepts</small></div>
+        <div><span>{LAB_COUNTS.total}</span><small>hands-on science labs</small></div>
         <div><span>{progress}</span><small>activities completed here</small></div>
         <p>Every activity quietly builds fine-motor skills, focus, vocabulary, creativity, or problem-solving.</p>
       </section>
@@ -723,6 +725,7 @@ function Studio({
     draw: "Try one shape, one brush, and one color you have never combined before. New ideas often begin with a tiny experiment!",
     color: "Colors do not have to copy real life. A purple ocean or golden elephant can begin a wonderful story.",
     puzzle: "Slow thinking is strong thinking. Name the rule before you choose a piece.",
+    stories: "Funny stories can grow from one surprising question. What would you change in this story?",
     math: "If a number feels tricky, draw it, build it, or tell a small story about it.",
     science: "Scientists are allowed to change their minds when new evidence appears. That is how learning grows.",
     lab: "Make a prediction first. A surprising result is useful evidence, not a mistake.",
@@ -777,7 +780,7 @@ function Studio({
           </div>
           <p className="sidebar-label">Create</p>
           <div className="activity-tabs">
-            {(Object.keys(ACTIVITY_META) as Activity[]).filter((key) => age >= 2 || key !== "discover").map((key) => (
+            {(Object.keys(ACTIVITY_META) as Activity[]).filter((key) => (age < 2 ? key !== "discover" : key !== "stories")).map((key) => (
               <button key={key} className={activity === key ? "active" : ""} onClick={guard(() => onActivity(key))}>
                 <span>{ACTIVITY_META[key].icon}</span>
                 <span><strong>{ACTIVITY_META[key].title}</strong><small>{ACTIVITY_META[key].copy}</small><em>{profileProgress.activities[key].completed.length} completed</em></span>
@@ -807,12 +810,13 @@ function Studio({
           {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onDirtyChange={setDrawingUnsaved} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}
           {activity === "color" && <ColoringBoard key={`c-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
+          {activity === "stories" && <StorybookBoard key={`story-${page}-${age}`} page={page} age={age} onSelectBook={onPage} onComplete={onComplete} />}
           {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}`} subject={activity} page={page} age={age} liked={profileProgress.learning.likedLessons.includes(getLearningLessons(activity, age)[page - 1].id)} onComplete={onComplete} onAttempt={() => onLearningAttempt(activity)} onLike={onLikeLesson} onSelectLesson={onPage} />}
           {activity === "lab" && <ScienceLabBoard key={`lab-${page}-${age}`} page={page} age={age} onComplete={onComplete} onSelectLab={onPage} />}
           {activity === "discover" && <DiscoveryBoard key={`x-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
 
           <div className="next-row">
-            <div><span>🌟</span><p><strong>Creative reminder</strong><br />There is no wrong way to make art.</p></div>
+            <div><span>🌟</span><p><strong>{activity === "stories" ? "Story reminder" : "Creative reminder"}</strong><br />{activity === "stories" ? "You can reread, retell, or invent a different ending." : "There is no wrong way to make art."}</p></div>
             <button className="primary-button" onClick={guard(() => onPage(page === total ? 1 : page + 1))}>Next {unit.toLowerCase()} →</button>
           </div>
 
@@ -1023,7 +1027,7 @@ function ParentCorner({
                   <label>Age<input type="number" min="1" max="12" value={profile.age} onChange={(event) => onUpdateProfile({ ...profile, age: Math.max(1, Math.min(12, Number(event.target.value) || 1)) })} /></label>
                   <strong>{completedCount(childProgress)} completed</strong>
                   <small>Continue: {ACTIVITY_META[childProgress.lastActivity].title}, page {childProgress.activities[childProgress.lastActivity].lastPage}</small>
-                  <div className="progress-chips">{(["draw", "color", "puzzle", "math", "science", "lab"] as Activity[]).map((key) => <span key={key}>{ACTIVITY_META[key].icon} {childProgress.activities[key].completed.length}</span>)}</div>
+                  <div className="progress-chips">{(["draw", "color", "puzzle", "stories", "math", "science", "lab"] as Activity[]).map((key) => <span key={key}>{ACTIVITY_META[key].icon} {childProgress.activities[key].completed.length}</span>)}</div>
                   <button onClick={() => onDeleteProfile(profile.id)}>Delete profile</button>
                 </article>
               );
@@ -1109,7 +1113,7 @@ export default function ColorQuestApp() {
 
   const start = (nextActivity: Activity = "draw", resume = false, requestedPage?: number) => {
     if (!activeProfile) return;
-    const nextAge = nextActivity === "discover" && age < 2 ? 2 : age;
+    const nextAge = nextActivity === "discover" && age < 2 ? 2 : nextActivity === "stories" && age >= 2 ? 1 : age;
     const nextPage = requestedPage || (resume ? activeProgress.activities[nextActivity].lastPage : 1);
     if (nextAge !== age) setAge(nextAge);
     setActivity(nextActivity);
@@ -1125,6 +1129,7 @@ export default function ColorQuestApp() {
     setAge(nextAge);
     setPage(1);
     if (nextAge < 2 && activity === "discover") setActivity("draw");
+    if (nextAge >= 2 && activity === "stories") setActivity("math");
   };
 
   const changeActivity = (nextActivity: Activity) => {

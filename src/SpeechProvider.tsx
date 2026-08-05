@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   getSpeechVoices,
+  fifiVoiceProfileForAge,
   isSpeechSupported,
   joinForSpeech,
   loadSpeechSettings,
@@ -102,11 +103,13 @@ export function SpeechProvider({ ageWorld, children }: { ageWorld: number; child
     if (!available) return false;
     const request = ++requestRef.current;
     setSpeakingId(options.id || null);
-    const profile = voiceProfileForAge(settings, ageWorld);
     const fifiStyle = options.style === "fifi";
+    const profile = fifiStyle
+      ? fifiVoiceProfileForAge(settings, ageWorld)
+      : voiceProfileForAge(settings, ageWorld);
     const started = speak(text, {
-      rate: fifiStyle ? Math.max(0.58, profile.rate - 0.03) : profile.rate,
-      pitch: fifiStyle ? Math.min(1.3, profile.pitch + (ageWorld <= 1 ? 0.12 : 0.08)) : profile.pitch,
+      rate: profile.rate,
+      pitch: profile.pitch,
       voice: selectedNativeVoice,
       onDone: () => {
         if (requestRef.current !== request) return;

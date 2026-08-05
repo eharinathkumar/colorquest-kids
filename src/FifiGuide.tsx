@@ -87,6 +87,7 @@ function FifiMascot({ src, talking }: { src?: string; talking: boolean }) {
           onError={() => setImageFailed(true)}
         />
       <span className={`fifi-mouth ${talking ? "fifi-mouth-talking" : ""}`} aria-hidden="true" />
+      <span className="fifi-sparkles" aria-hidden="true"><i /><i /><i /></span>
     </>;
   }
 
@@ -197,7 +198,7 @@ export default function FifiGuide(props: FifiGuideProps) {
   // button, so both paths stay visually synchronized.
   useEffect(() => {
     if (!open || !autoGreet || !autoRead) return undefined;
-    const timer = window.setTimeout(() => say(copy.listenText, { id: speechId, style: "fifi" }), 520);
+    const timer = window.setTimeout(() => say(copy.listenText, { id: speechId, style: "fifi" }), 700);
     return () => {
       window.clearTimeout(timer);
       stop();

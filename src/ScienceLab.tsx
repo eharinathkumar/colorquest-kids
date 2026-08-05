@@ -13,6 +13,8 @@ export function labNarration(lab: ScienceLab) {
     `You will need: ${lab.materials.join(", ")}.`,
     ...lab.steps.map((step, index) => `Step ${index + 1}. ${step}`),
     `What to observe: ${lab.observation}`,
+    ...(lab.vocabulary?.map(({ word, meaning }) => `${word} means ${meaning}.`) || []),
+    ...(lab.connection ? [`In the real world: ${lab.connection}`] : []),
   ];
 }
 
@@ -104,10 +106,29 @@ export default function ScienceLabBoard({ age, page, onComplete, onSelectLab }: 
           <span>5 · EXPLAIN</span>
           <h4>Compare the evidence with your prediction</h4>
           <p>{revealed ? lab.explanation : "Finish the safe steps, then reveal the science. A result that surprises you is still useful evidence."}</p>
-          {revealed && <SpeakButton id={`lab-explain-${lab.id}`} label="Hear the science" text={[lab.explanation, lab.wonder]} />}
+          {revealed && <SpeakButton
+            id={`lab-explain-${lab.id}`}
+            label="Hear the science"
+            text={[
+              lab.explanation,
+              ...(lab.vocabulary?.map(({ word, meaning }) => `${word} means ${meaning}.`) || []),
+              ...(lab.connection ? [`In the real world: ${lab.connection}`] : []),
+              lab.wonder,
+            ]}
+          />}
         </div>
         <button disabled={!prediction || checked.length < lab.steps.length} onClick={reveal}>{revealed ? "✓ Explanation revealed" : "Reveal the science"}</button>
       </section>
+      {revealed && (lab.vocabulary?.length || lab.connection) && <section className="lab-wonder lab-learning-layer">
+        {lab.vocabulary?.length ? <div>
+          <span>🧠 SCIENCE WORDS</span>
+          <p>{lab.vocabulary.map(({ word, meaning }) => <span key={word}><strong>{word}:</strong> {meaning}. </span>)}</p>
+        </div> : null}
+        {lab.connection ? <div>
+          <span>🌎 WHERE THIS SHOWS UP</span>
+          <p>{lab.connection}</p>
+        </div> : null}
+      </section>}
       {revealed && <section className="lab-wonder"><span>🌟 NEXT QUESTION</span><p>{lab.wonder}</p><strong>Draw or write what you would test next.</strong></section>}
       <section className="lab-map"><strong>Choose another investigation</strong><div>{labs.map((item, index) => <button key={item.id} className={index + 1 === page ? "active" : ""} onClick={() => onSelectLab(index + 1)}><span>{item.icon}</span>{item.title}<small>{SAFETY_ICON[item.safety]} {item.safety}</small></button>)}</div></section>
       <p className="lab-safety-note">Never taste lab materials. Never use flames, mains electricity, sealed pressure experiments, or unknown chemicals. Stop if anything breaks, spills dangerously, or becomes hot.</p>

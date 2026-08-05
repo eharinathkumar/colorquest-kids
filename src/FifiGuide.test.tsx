@@ -85,6 +85,7 @@ describe("FifiGuide", () => {
     );
     expect(document.body.querySelector(".fifi-speech-bubble")).toBeTruthy();
     expect(document.body.querySelector(".fifi-mouth")).toBeTruthy();
+    expect(document.body.querySelectorAll(".fifi-sparkles i")).toHaveLength(3);
     expect(container).toBeTruthy();
   });
 

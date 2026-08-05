@@ -60,8 +60,8 @@
   transform: rotate(-3deg);
   filter: drop-shadow(0 10px 9px rgb(32 47 96 / 20%));
   animation:
-    fifi-mascot-arrive 1.65s cubic-bezier(.2, .88, .25, 1.08) 80ms both,
-    fifi-idle-float 2.1s ease-in-out 1.75s 5;
+    fifi-mascot-arrive 2.05s cubic-bezier(.2, .88, .25, 1.08) 80ms both,
+    fifi-idle-float 2.1s ease-in-out 2.15s 5;
 }
 
 .fifi-mascot-image {
@@ -71,6 +71,26 @@
   object-fit: contain;
   border-radius: 0;
 }
+
+.fifi-sparkles {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+}
+
+.fifi-sparkles i {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  opacity: 0;
+  background: #ffd65a;
+  clip-path: polygon(50% 0, 61% 35%, 100% 50%, 61% 63%, 50% 100%, 38% 63%, 0 50%, 38% 35%);
+  animation: fifi-sparkle-pop 2.05s ease-out 100ms both;
+}
+
+.fifi-sparkles i:nth-child(1) { top: 8%; right: 5%; }
+.fifi-sparkles i:nth-child(2) { top: 42%; left: -3%; width: 9px; height: 9px; animation-delay: 430ms; }
+.fifi-sparkles i:nth-child(3) { right: 0; bottom: 10%; width: 10px; height: 10px; background: #ff8b78; animation-delay: 720ms; }
 
 /* The original raster stays untouched. This tiny overlay covers only Fifi's
    painted smile while speech is active, giving a crisp two-pose mouth cycle. */
@@ -332,12 +352,20 @@
 }
 
 @keyframes fifi-mascot-arrive {
-  0% { opacity: 0; transform: translate(125px, 65px) rotate(24deg) scale(.42); }
-  32% { opacity: 1; transform: translate(-15px, -34px) rotate(-14deg) scale(1.12); }
-  52% { transform: translate(8px, 8px) rotate(7deg) scale(.94); }
-  70% { transform: translate(-5px, -16px) rotate(-6deg) scale(1.05); }
-  86% { transform: translate(3px, 3px) rotate(2deg) scale(.98); }
+  0% { opacity: 0; transform: translate(150px, 88px) rotate(28deg) scale(.34, .48); }
+  26% { opacity: 1; transform: translate(-17px, -42px) rotate(-16deg) scale(1.13, .91); }
+  43% { transform: translate(10px, 9px) rotate(8deg) scale(.92, 1.08); }
+  61% { transform: translate(-7px, -25px) rotate(-8deg) scale(1.08, .95); }
+  78% { transform: translate(4px, 4px) rotate(3deg) scale(.97, 1.03); }
+  90% { transform: translate(-2px, -9px) rotate(-4deg) scale(1.02, .98); }
   100% { opacity: 1; transform: translate(0) rotate(-3deg) scale(1); }
+}
+
+@keyframes fifi-sparkle-pop {
+  0%, 18% { opacity: 0; transform: scale(.2) rotate(0); }
+  36% { opacity: 1; transform: scale(1.35) rotate(90deg); }
+  58% { opacity: .8; transform: scale(.9) rotate(150deg); }
+  100% { opacity: 0; transform: scale(.25) rotate(240deg); }
 }
 
 @keyframes fifi-idle-float {
@@ -420,6 +448,7 @@
   .fifi-dialog,
   .fifi-tip,
   .fifi-mascot,
+  .fifi-sparkles i,
   .fifi-mouth,
   .fifi-button {
     animation: none !important;

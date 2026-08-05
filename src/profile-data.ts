@@ -1,4 +1,4 @@
-export type ActivityKey = "draw" | "color" | "puzzle" | "math" | "science" | "lab" | "discover";
+export type ActivityKey = "draw" | "color" | "puzzle" | "stories" | "math" | "science" | "lab" | "discover";
 export type InterestKey = "numbers" | "patterns" | "building" | "animals" | "earth" | "space" | "experiments" | "stories";
 
 export type ChildProfile = {
@@ -38,7 +38,7 @@ export type FamilyData = {
 export const PROFILE_STORAGE_KEY = "colorquest-family-v3";
 export const LEGACY_PROFILE_STORAGE_KEY = "colorquest-family-v2";
 export const PROFILE_AVATARS = ["🦊", "🐼", "🦁", "🐬", "🦋", "🚀", "🌈", "🔬"];
-export const ACTIVITY_KEYS: ActivityKey[] = ["draw", "color", "puzzle", "math", "science", "lab", "discover"];
+export const ACTIVITY_KEYS: ActivityKey[] = ["draw", "color", "puzzle", "stories", "math", "science", "lab", "discover"];
 export const INTEREST_KEYS: InterestKey[] = ["numbers", "patterns", "building", "animals", "earth", "space", "experiments", "stories"];
 
 export function emptyLearningSignals(): LearningSignals {
@@ -63,6 +63,7 @@ export function emptyProgress(legacyCompleted = 0): ProfileProgress {
       draw: { completed: [], lastPage: 1 },
       color: { completed: [], lastPage: 1 },
       puzzle: { completed: [], lastPage: 1 },
+      stories: { completed: [], lastPage: 1 },
       math: { completed: [], lastPage: 1 },
       science: { completed: [], lastPage: 1 },
       lab: { completed: [], lastPage: 1 },

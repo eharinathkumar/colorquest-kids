@@ -2,6 +2,7 @@ import { countPuzzles } from "./puzzle-data";
 import { getLearningLessons } from "./learning-data";
 import { getScienceLabs } from "./lab-data";
 import { DISCOVERY_COUNTS } from "./discovery-data";
+import { getStoryBooks } from "./story-data";
 import type { ActivityKey } from "./profile-data";
 
 /**
@@ -36,6 +37,8 @@ export function activityCount(activity: ActivityKey, ageWorld: number): number {
       return DRAW_PAGE_COUNT;
     case "puzzle":
       return countPuzzles(ageWorld);
+    case "stories":
+      return getStoryBooks(ageWorld).length;
     case "math":
     case "science":
       return getLearningLessons(activity, ageWorld).length;
@@ -64,6 +67,8 @@ export function activityUnit(activity: ActivityKey): string {
       return "Puzzle";
     case "discover":
       return "Mission";
+    case "stories":
+      return "Book";
     default:
       return "Activity";
   }
@@ -86,6 +91,8 @@ export function activityNoun(activity: ActivityKey, count: number): string {
       return `puzzle${plural}`;
     case "discover":
       return `mission${plural}`;
+    case "stories":
+      return `storybook${plural}`;
     default:
       return `activity${count === 1 ? "" : "ies"}`;
   }

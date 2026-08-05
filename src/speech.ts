@@ -177,6 +177,23 @@ export function voiceProfileForAge(settings: SpeechSettings, ageWorld: number): 
   };
 }
 
+/**
+ * Fifi is a character voice, not the lesson narrator. A slightly quicker,
+ * brighter delivery keeps the guide playful without making older children
+ * sound babyish. The device still supplies the actual voice.
+ */
+export function fifiVoiceProfileForAge(settings: SpeechSettings, ageWorld: number): AgeVoiceProfile {
+  const safeAge = Math.max(0, Math.min(3, Math.floor(ageWorld)));
+  const base = voiceProfileForAge(settings, safeAge);
+  const pitchLift = [0.24, 0.2, 0.14, 0.1][safeAge];
+  const rateLift = [0.07, 0.06, 0.03, 0.02][safeAge];
+  return {
+    label: safeAge <= 1 ? "Playful and bright" : "Bright and curious",
+    rate: Math.min(1.2, Math.max(0.5, base.rate + rateLift)),
+    pitch: Math.min(1.45, Math.max(0.8, base.pitch + pitchLift)),
+  };
+}
+
 /** Kept as a small public helper for existing callers and tests. */
 export function rateForAge(settings: SpeechSettings, ageWorld: number): number {
   return voiceProfileForAge(settings, ageWorld).rate;
@@ -270,7 +287,7 @@ export function speak(raw: string, options: SpeakOptions = {}): boolean {
   try {
     const utterance = new window.SpeechSynthesisUtterance(text);
     utterance.rate = Math.min(1.2, Math.max(0.5, options.rate ?? DEFAULT_SPEECH_SETTINGS.rate));
-    utterance.pitch = Math.min(1.3, Math.max(0.8, options.pitch ?? 1.02));
+    utterance.pitch = Math.min(1.45, Math.max(0.8, options.pitch ?? 1.02));
     if (options.voice) {
       utterance.voice = options.voice;
       utterance.lang = options.voice.lang;

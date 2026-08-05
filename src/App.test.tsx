@@ -289,15 +289,16 @@ describe("Varied puzzle catalog", () => {
 });
 
 describe("Math and science learning trails", () => {
-  it("contains eight complete lessons per subject in every age world", () => {
-    expect(LEARNING_COUNTS.total).toBe(64);
+  it("keeps complete learning trails while older math grows in planned phases", () => {
+    expect(LEARNING_COUNTS.total).toBe(72);
 
     for (const subject of ["math", "science"] as const) {
       for (const age of [0, 1, 2, 3]) {
         const lessons = getLearningLessons(subject, age);
-        expect(lessons).toHaveLength(8);
-        expect(new Set(lessons.map((lesson) => lesson.id)).size).toBe(8);
-        expect(new Set(lessons.map((lesson) => lesson.title)).size).toBe(8);
+        const expected = subject === "math" && age >= 2 ? 12 : 8;
+        expect(lessons).toHaveLength(expected);
+        expect(new Set(lessons.map((lesson) => lesson.id)).size).toBe(expected);
+        expect(new Set(lessons.map((lesson) => lesson.title)).size).toBe(expected);
         expect(lessons.every((lesson) => lesson.choices.length === 3 && lesson.choices.includes(lesson.answer))).toBe(true);
         expect(lessons.every((lesson) => lesson.bigIdea && lesson.explanation && lesson.why && lesson.activity)).toBe(true);
       }
@@ -354,12 +355,13 @@ describe("Math and science learning trails", () => {
 });
 
 describe("Science Lab and mentor paths", () => {
-  it("contains eight distinct, safety-labelled investigations per age world", () => {
-    expect(LAB_COUNTS.total).toBe(32);
+  it("contains distinct, safety-labelled investigations with deeper older-kid catalogs", () => {
+    expect(LAB_COUNTS.total).toBe(47);
+    const expectedPerAge = [8, 8, 15, 16];
     for (const age of [0, 1, 2, 3]) {
       const labs = getScienceLabs(age);
-      expect(labs).toHaveLength(8);
-      expect(new Set(labs.map((lab) => lab.id)).size).toBe(8);
+      expect(labs).toHaveLength(expectedPerAge[age]);
+      expect(new Set(labs.map((lab) => lab.id)).size).toBe(expectedPerAge[age]);
       expect(labs.every((lab) => ["Child can try", "Grown-up nearby", "Grown-up required"].includes(lab.safety))).toBe(true);
       expect(labs.every((lab) => lab.steps.length >= 3 && lab.explanation && lab.wonder)).toBe(true);
     }

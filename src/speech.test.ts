@@ -4,6 +4,7 @@ import { getPuzzle } from "./puzzle-data";
 import { puzzleChoiceNarration } from "./PuzzleBoard";
 import { labNarration } from "./ScienceLab";
 import {
+  fifiVoiceProfileForAge,
   selectSpeechVoice,
   voicePreferenceFor,
   voiceProfileForAge,
@@ -44,6 +45,16 @@ describe("age-aware voice selection", () => {
     expect(youngest.pitch).toBeGreaterThan(oldest.pitch);
     expect(youngest.label).toMatch(/warm/i);
     expect(oldest.label).toMatch(/natural/i);
+  });
+
+  it("gives Fifi a brighter age-aware character voice without making older narration childish", () => {
+    const littleFifi = fifiVoiceProfileForAge(settings, 0);
+    const olderFifi = fifiVoiceProfileForAge(settings, 3);
+    expect(littleFifi.pitch).toBeGreaterThan(voiceProfileForAge(settings, 0).pitch);
+    expect(littleFifi.rate).toBeGreaterThan(voiceProfileForAge(settings, 0).rate);
+    expect(littleFifi.pitch).toBeGreaterThan(olderFifi.pitch);
+    expect(littleFifi.label).toMatch(/playful/i);
+    expect(olderFifi.label).toMatch(/curious/i);
   });
 });
 
