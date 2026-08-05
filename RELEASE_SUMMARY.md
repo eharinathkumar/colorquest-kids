@@ -1,10 +1,16 @@
-# ColorQuest Kids 2.4 storybooks and deeper learning
+# ColorQuest Kids 2.4.1 organization release
 
-Release date: August 4, 2026  
-Web version: 2.4.0  
-Android version: 2.4.0 (`versionCode` 8)
+Release date: August 5, 2026  
+Web version: 2.4.1  
+Android version: 2.4.1 (`versionCode` 9)
 
 ## Headline changes
+
+- **One child-friendly map:** Home and Studio now use the same Create, Play & Read, and Learn & Discover grouping.
+- **Age-safe exploration:** storybooks appear only in the two younger worlds and Discovery appears only in the two older worlds; invalid saved destinations fall back safely.
+- **No surprise page loops:** previous/next controls stop at the boundaries and clearly mark the end of a catalog.
+- **Story narration repaired:** a book title is automatically spoken on the opening page only, rather than before every page.
+- **Dead-link protection:** automated tests restrict outside resources to approved HTTPS education hosts; all four current NASA, NOAA, and PhET destinations were also opened successfully on August 5, 2026.
 
 - **Six original picture books:** three books for ages 1–3 and three for ages 4–6, with 24 original local illustrations, funny four-page stories, narration, vocabulary, and imagination prompts.
 - **Self-paced reading:** children can hear one page or the whole book, revisit any page, switch books from the shelf, and record completion only when they choose.
@@ -25,11 +31,11 @@ Android version: 2.4.0 (`versionCode` 8)
 
 ## Verified here
 
-- `npm run check`: **60/60 tests passed**, TypeScript passed, production web build passed.
+- `npm run check`: **65/65 tests passed**, TypeScript passed, production web build passed.
 - `npm audit --omit=dev`: **0 vulnerabilities**.
 - `npm run android:sync`: Android-targeted web build passed and copied successfully.
 - No `.map` files in the web or Android asset bundles.
-- Built GitHub Pages preview served Fifi's local art, storybook CSS, a bundled story image, and the v2.4 offline manifest successfully.
+- Final web and Android bundles contain Fifi's local art, storybook CSS, all 24 story images, and the v2.4.1 offline manifest.
 
 ## Still required on your computer
 

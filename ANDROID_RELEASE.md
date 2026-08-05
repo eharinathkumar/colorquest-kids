@@ -2,7 +2,7 @@
 
 The Android project wraps the same tested ColorQuest experience and bundles its web files inside the application. It does not load the GitHub Pages site as its main screen.
 
-Release target: **ColorQuest Kids 2.4.0**, `versionCode` **8**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
+Release target: **ColorQuest Kids 2.4.1**, `versionCode` **9**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
 
 ## What is ready
 
@@ -16,6 +16,9 @@ Release target: **ColorQuest Kids 2.4.0**, `versionCode` **8**. Google Play requ
 - Fifi's in-app autosave/start-over guide replaces browser-origin confirmation alerts and works as a mobile bottom sheet
 - Fifi now hops in, speaks through a comic callout, and animates his mouth while his age-aware character voice is active
 - Six narrated, illustrated, offline storybooks for ages 1–3 and 4–6, with vocabulary and imagination prompts
+- Storybook auto-reading says the title once on the opening page, then reads only the current page
+- Consistent Create, Play & Read, and Learn & Discover paths on both Home and Studio
+- Age-safe resume routing plus bounded previous/next navigation with a clear end state
 - Age-aware narration, selectable English voices, and expanded puzzle/lab/Discovery read-aloud coverage
 - Private on-device artwork gallery with parent-controlled Android share/export
 - Six varied puzzle mechanics with age-specific content: matching, sorting, sequencing, patterns, odd-one-out, and clue solving

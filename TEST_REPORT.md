@@ -1,12 +1,12 @@
 # ColorQuest Kids test report
 
-Date: August 4, 2026  
-Build target: Android 2.4.0 (`versionCode` 8)  
+Date: August 5, 2026  
+Build target: Android 2.4.1 (`versionCode` 9)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
 
-**PASS — 60 of 60 automated tests across seven test files.** The fully integrated source passed `npm run check` on August 4, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the 2.4 storybook, Math, Science, and Fifi work was integrated.
+**PASS — 65 of 65 automated tests across seven test files.** The fully integrated source passed `npm run check` on August 5, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the organization and narration fixes were integrated.
 
 Coverage includes:
 
@@ -51,6 +51,10 @@ Coverage includes:
 - The active child receives one age-aware Fifi welcome per app session
 - Fifi's free-floating entrance wrapper remains independent from the talking image animation
 - Six distinct four-page picture books with 24 local illustrations, narration, vocabulary, imagination prompts, bookshelf selection, and deliberate completion
+- Storybook automatic narration speaks the title on page one only and does not repeat it on later pages
+- Create, Play & Read, and Learn & Discover contain every available activity exactly once in each age world
+- Invalid, unavailable, and out-of-range saved destinations are repaired before resume
+- Outside learning destinations are restricted to HTTPS on the approved NASA, NOAA, and PhET hosts
 - Fifi's brighter character voice remains age-aware and separate from lesson narration
 - Older Math curriculum completeness, unique answers, vocabulary, and off-screen practice
 - Older Science Lab breadth, safety, vocabulary, real-world connections, and catalog wrapping
@@ -68,7 +72,7 @@ npm audit --omit=dev
 
 The final verification found no `.map` files in either `dist/` or the synchronized `android/app/src/main/assets/public/` directory. Run `npm run android:sync` only after any future web changes are approved.
 
-The built GitHub Pages preview returned the local Fifi PNG, storybook CSS, a bundled WebP story page, and the v2.4 offline manifest. The compiled CSS contains the entrance, sparkle, and idle-float animations; a static rule check confirmed that speaking does not override the mascot wrapper's entrance animation.
+The final GitHub Pages and Android bundles contain the local Fifi PNG, storybook CSS, all 24 bundled WebP story pages, and the v2.4.1 offline manifest. The compiled CSS contains the entrance, sparkle, and idle-float animations; a static rule check confirmed that speaking does not override the mascot wrapper's entrance animation.
 
 ## Android configuration checks
 
@@ -83,8 +87,8 @@ The built GitHub Pages preview returned the local Fifi PNG, storybook CSS, a bun
 - Parent-gated artwork export uses an app-private cache file and Android system share sheet
 - Production source-map generation disabled in Vite
 - Release R8 minification and Android resource shrinking enabled
-- Version set to 2.4.0 / code 8
-- Offline cache namespace set to v2.4, with all 24 story illustrations, forced asset revalidation, and no third-party/runtime response caching
+- Version set to 2.4.1 / code 9
+- Offline cache namespace set to v2.4.1, with all 24 story illustrations, forced asset revalidation, and no third-party/runtime response caching
 
 ## Remaining release and physical-device checks
 

@@ -2,6 +2,15 @@
 
 ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, funny illustrated storybooks, varied reasoning puzzles, guided Math and Science trails, hands-on Science Labs, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
 
+## New in version 2.4.1 — A clearer path for every child
+
+- Home and Studio now share three predictable paths: **Create**, **Play & Read**, and **Learn & Discover**
+- Each age world shows only activities written for that age; old saved locations are repaired safely when content availability changes
+- Page arrows stop at the first and last item instead of wrapping unexpectedly, and the last button clearly says the section is complete
+- Storybook automatic narration says the title on page one only; later pages read only their own story text
+- Automated route checks cover grouped activities, invalid resume locations, and approved external learning hosts
+- NASA Space Place, NOAA Education, and the two PhET destinations were opened and confirmed live on August 5, 2026
+
 ## New in version 2.4 — Picture stories and deeper learning
 
 - Six original funny picture books for ages 1–3 and 4–6, with 24 locally bundled illustrations
