@@ -2,7 +2,7 @@
 
 The Android project wraps the same tested ColorQuest experience and bundles its web files inside the application. It does not load the GitHub Pages site as its main screen.
 
-Release target: **ColorQuest Kids 2.3.1**, `versionCode` **7**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
+Release target: **ColorQuest Kids 2.4.0**, `versionCode` **8**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
 
 ## What is ready
 
@@ -15,12 +15,13 @@ Release target: **ColorQuest Kids 2.3.1**, `versionCode` **7**. Google Play requ
 - Layered Drawing Studio with eight brushes, six base paints, and movable/editable vector shapes
 - Fifi's in-app autosave/start-over guide replaces browser-origin confirmation alerts and works as a mobile bottom sheet
 - Fifi now hops in, speaks through a comic callout, and animates his mouth while his age-aware character voice is active
+- Six narrated, illustrated, offline storybooks for ages 1–3 and 4–6, with vocabulary and imagination prompts
 - Age-aware narration, selectable English voices, and expanded puzzle/lab/Discovery read-aloud coverage
 - Private on-device artwork gallery with parent-controlled Android share/export
 - Six varied puzzle mechanics with age-specific content: matching, sorting, sequencing, patterns, odd-one-out, and clue solving
-- 64 guided Math and Science concepts: eight per subject in each of four age worlds
+- 72 guided Math and Science concepts, including 12 Math concepts in each older age world
 - Gentle on-device mentor paths based on age, progress, and voluntary **I liked this** signals
-- 32 age-specific hands-on Science Labs with explicit safety levels and prediction-to-explanation flow
+- 47 age-specific hands-on Science Labs with explicit safety levels and prediction-to-explanation flow
 - Alternate explanations, four-frame concept stories, stronger hints, curated grown-up-gated resources, and an age-aware book shelf
 - Automated tests for profile onboarding, age routing, progress isolation, drawing layers, editable shapes, gallery/export, coloring, puzzle variety, guided learning, Science Labs, mentor recommendations, and 400 distinct Discovery Lab missions
 - No advertising, child account, chat, location, camera, microphone, contacts, or broad storage permission
@@ -55,10 +56,11 @@ The normal Android Studio **Run** button creates a debug build and does not prov
 - Test **Undo** and **New page** after combining brush strokes, shapes, and base paint.
 - Draw a stroke, then try every way out of the studio; confirm Fifi appears, **Stay & draw** keeps the canvas, and **Keep it safe and leave** restores the draft later.
 - Color at least one complete animal, tulip garden, and landscape.
+- Read one picture book in each younger age world; test page narration, whole-story narration, page dots, bookshelf switching, and completion tracking.
 - Complete at least one matching, sorting, sequencing, pattern, odd-one-out, and clue-solving puzzle.
 - Page through the complete advertised puzzle total in each age world and confirm no puzzle repeats before the final page.
 - Open Math and Science in all four age worlds. Answer one concept correctly and try one incorrect answer in each.
-- Confirm each Math/Science trail has eight concepts, readable explanations, vocabulary, and an off-screen activity.
+- Confirm the younger Math/Science trails have eight concepts and the older Math trails have 12, all with readable explanations, vocabulary, and an off-screen activity.
 - Open **Explain it another way**, play and pause a concept story, answer incorrectly, and verify the hint is useful without revealing the answer.
 - Finish a lesson, tap **I liked this**, return home, and confirm the mentor reflects the growing interest.
 - Open Science Lab in every age world. Confirm the safety level is prominent and the explanation stays locked until prediction and steps are complete.

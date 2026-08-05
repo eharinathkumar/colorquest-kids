@@ -1,14 +1,18 @@
-# ColorQuest Kids 2.3.1 Fifi QC hotfix
+# ColorQuest Kids 2.4 storybooks and deeper learning
 
-Release date: August 3, 2026  
-Web version: 2.3.1  
-Android version: 2.3.1 (`versionCode` 7)
+Release date: August 4, 2026  
+Web version: 2.4.0  
+Android version: 2.4.0 (`versionCode` 8)
 
 ## Headline changes
 
-- **Fifi movement repaired:** speaking no longer replaces the entrance animation; Fifi performs a visible multi-hop and then gently floats.
-- **Fifi is unboxed:** the old colored mascot tile, border, and tile shadow have been removed, leaving only the character and a soft drop shadow.
-- **Fresh rollout:** the greeting marker and offline cache are versioned again so returning testers receive the corrected animation after deployment.
+- **Six original picture books:** three books for ages 1–3 and three for ages 4–6, with 24 original local illustrations, funny four-page stories, narration, vocabulary, and imagination prompts.
+- **Self-paced reading:** children can hear one page or the whole book, revisit any page, switch books from the shelf, and record completion only when they choose.
+- **Older Math expansion:** ages 7–9 and 10–12 now have 12 concepts each, including decimals, measurement, coordinates, patterns, rates, and two-step equations.
+- **Older Science expansion:** the two older worlds now offer 15 and 16 labs with broader physics, chemistry, life, Earth, climate, sound, and astronomy coverage.
+- **Layered lab explanations:** new vocabulary and real-world connections appear after prediction, steps, and evidence—not before.
+- **Cuter Fifi:** brighter age-aware character delivery, a larger squash-and-stretch multi-hop, sparkle trail, gentle floating, and synchronized talking mouth.
+- **Fresh offline rollout:** all 24 story images are in the versioned offline shell, and the Fifi greeting marker is refreshed for this release.
 
 - **Fifi the Color Spark:** original local mascot art and accessible in-app guidance for drawing exits, autosave, start-over, and one-time creative tips.
 - **Fifi comes alive:** short hop-in greeting, comic speech callout, synchronized mouth pose, and a cuter character voice layered over the existing age-aware narration.
@@ -21,11 +25,11 @@ Android version: 2.3.1 (`versionCode` 7)
 
 ## Verified here
 
-- `npm run check`: **47/47 tests passed**, TypeScript passed, production web build passed.
+- `npm run check`: **60/60 tests passed**, TypeScript passed, production web build passed.
 - `npm audit --omit=dev`: **0 vulnerabilities**.
 - `npm run android:sync`: Android-targeted web build passed and copied successfully.
 - No `.map` files in the web or Android asset bundles.
-- Built GitHub Pages preview served Fifi's local art and the repaired entrance/float CSS successfully.
+- Built GitHub Pages preview served Fifi's local art, storybook CSS, a bundled story image, and the v2.4 offline manifest successfully.
 
 ## Still required on your computer
 

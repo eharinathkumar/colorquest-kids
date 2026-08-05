@@ -1,6 +1,16 @@
 # ColorQuest Kids
 
-ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, varied reasoning puzzles, guided Math and Science trails, hands-on Science Labs, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
+ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, funny illustrated storybooks, varied reasoning puzzles, guided Math and Science trails, hands-on Science Labs, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
+
+## New in version 2.4 — Picture stories and deeper learning
+
+- Six original funny picture books for ages 1–3 and 4–6, with 24 locally bundled illustrations
+- Four-page reader with **Hear this page**, **Read whole story**, child-friendly vocabulary, imagination prompts, and self-paced completion tracking
+- Storybook art and narration remain usable offline; no live image requests, ads, or outside accounts
+- Ages 7–9 and 10–12 gain eight additional Math concepts covering strategies, decimals, measurement, coordinates, patterns, rates, and introductory equations
+- The older Science Lab catalogs grow to 15 and 16 investigations, adding physics, chemistry, biology, Earth/climate, sound, and astronomy
+- New Science Lab vocabulary and real-world connections unlock after the child completes the evidence cycle
+- Fifi has a brighter age-aware character voice, a clearer squash-and-stretch entrance, sparkling jump trail, gentle floating, and talking mouth motion
 
 ## New in version 2.3.1 — Fifi movement QC fix
 
@@ -14,7 +24,7 @@ ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1
 - Fifi hops into view with a playful, short greeting animation instead of sitting still
 - Comic-style speech bubbles point from Fifi to the words he is sharing
 - A lightweight two-pose mouth animation runs only while Fifi is speaking
-- Fifi uses a brighter character pitch and gentler pace while lesson narration keeps its natural age-aware delivery
+- Fifi uses a separate character delivery while lesson narration keeps its natural age-aware voice
 - Automatic spoken greetings follow the parent&apos;s existing read-aloud setting; reduced-motion preferences disable bouncing
 
 ## Version 2.2 — the quality and guidance update
@@ -38,7 +48,7 @@ ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1
 - Eight interest signals—numbers, patterns, building, animals, Earth, space, experiments, and stories—grow only when a child chooses **I liked this**
 - Named learning paths such as Number Explorer, Shape Architect, Living World Explorer, Experiment Detective, and Space Explorer
 - Every Math and Science lesson now includes **Explain it another way**, a visual four-part concept story, a better wrong-answer hint, real-world meaning, and reflection
-- 32 hands-on Science Labs: eight carefully written investigations for each age world
+- Science Labs began with eight carefully written investigations for each age world and now expand further for older children
 - Every lab follows ask → predict → test safely → observe → explain → wonder and has a **Child can try**, **Grown-up nearby**, or **Grown-up required** label
 - Puzzle coaching now explains the thinking rule for matching, sorting, sequencing, patterns, odd-one-out, and clues
 - Curated NASA, NOAA, and PhET learning resources protected by a grown-up check; core lessons remain available offline
@@ -61,7 +71,7 @@ ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1
 
 - Six rotating puzzle formats: matching, sorting, sequencing, patterns, odd-one-out, and clue solving
 - Different puzzle content and reasoning language for ages 1–3, 4–6, 7–9, and 10–12
-- Eight guided Math concepts and eight guided Science concepts in every age world—64 lessons total
+- The original learning foundation introduced eight guided Math concepts and eight guided Science concepts in every age world
 - Every lesson includes a plain-language big idea, worked example, interactive question, explanation, vocabulary, and an off-screen activity
 - Age progression from counting, shapes, senses, and living things to fractions, algebra, forces, atoms, DNA, energy, and the universe
 

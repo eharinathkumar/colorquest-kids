@@ -1,12 +1,12 @@
 # ColorQuest Kids test report
 
 Date: August 4, 2026  
-Build target: Android 2.3.1 (`versionCode` 7)  
+Build target: Android 2.4.0 (`versionCode` 8)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
 
-**PASS — 47 of 47 automated tests across four test files.** The fully integrated source passed `npm run check` on August 4, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the 2.3.1 Fifi QC fix.
+**PASS — 60 of 60 automated tests across seven test files.** The fully integrated source passed `npm run check` on August 4, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the 2.4 storybook, Math, Science, and Fifi work was integrated.
 
 Coverage includes:
 
@@ -28,12 +28,12 @@ Coverage includes:
 - Every advertised puzzle page maps one-to-one onto a unique reachable puzzle before the deck repeats
 - The visible Puzzle Board uses the deduplicated deck rather than the repeating raw generator
 - Studio navigation changes correctly from matching to sorting to sequencing
-- 64 complete guided lessons: eight Math and eight Science concepts in each age world
+- 72 complete guided lessons, including 12 Math concepts in each older age world
 - Every guided lesson has three answer choices, a valid answer, explanation, vocabulary, and off-screen activity
 - Math answer feedback and age 10–12 Science content render correctly
 - Four-part concept story, alternate explanation, and on-device interest recording
 - Two age-aware mentor recommendations with named Math and Science paths
-- 32 distinct Science Labs: eight for every age world
+- 47 distinct Science Labs: 8, 8, 15, and 16 across the four age worlds
 - Every Science Lab includes safety level, prediction, at least three steps, explanation, and next question
 - Lab explanation remains locked until a prediction and all safe steps are checked
 - 400 distinct Discovery Lab titles for ages 7–9
@@ -50,10 +50,14 @@ Coverage includes:
 - Fifi's comic speech bubble and talking-mouth layer render with his local mascot art
 - The active child receives one age-aware Fifi welcome per app session
 - Fifi's free-floating entrance wrapper remains independent from the talking image animation
+- Six distinct four-page picture books with 24 local illustrations, narration, vocabulary, imagination prompts, bookshelf selection, and deliberate completion
+- Fifi's brighter character voice remains age-aware and separate from lesson narration
+- Older Math curriculum completeness, unique answers, vocabulary, and off-screen practice
+- Older Science Lab breadth, safety, vocabulary, real-world connections, and catalog wrapping
 
 ## Reproduce the automated run
 
-Run these commands after all v2.3.1 work is integrated:
+Run these commands after all v2.4 work is integrated:
 
 ```bash
 npm ci
@@ -64,7 +68,7 @@ npm audit --omit=dev
 
 The final verification found no `.map` files in either `dist/` or the synchronized `android/app/src/main/assets/public/` directory. Run `npm run android:sync` only after any future web changes are approved.
 
-The built GitHub Pages preview also returned the local Fifi PNG and the compiled CSS containing both the repaired entrance and idle-float animations. A static rule check confirmed that speaking no longer overrides the mascot wrapper's entrance animation.
+The built GitHub Pages preview returned the local Fifi PNG, storybook CSS, a bundled WebP story page, and the v2.4 offline manifest. The compiled CSS contains the entrance, sparkle, and idle-float animations; a static rule check confirmed that speaking does not override the mascot wrapper's entrance animation.
 
 ## Android configuration checks
 
@@ -79,8 +83,8 @@ The built GitHub Pages preview also returned the local Fifi PNG and the compiled
 - Parent-gated artwork export uses an app-private cache file and Android system share sheet
 - Production source-map generation disabled in Vite
 - Release R8 minification and Android resource shrinking enabled
-- Version set to 2.3.1 / code 7
-- Offline cache namespace set to v2.3.1, with forced asset revalidation and no third-party/runtime response caching
+- Version set to 2.4.0 / code 8
+- Offline cache namespace set to v2.4, with all 24 story illustrations, forced asset revalidation, and no third-party/runtime response caching
 
 ## Remaining release and physical-device checks
 
