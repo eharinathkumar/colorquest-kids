@@ -1,6 +1,10 @@
 const CACHE_PREFIX = "colorquest-";
-const VERSION = `${CACHE_PREFIX}v2.3.1`;
+const VERSION = `${CACHE_PREFIX}v2.4`;
 const BASE = self.registration.scope;
+const STORY_IDS = ["pips-hat", "moons-sock", "turtles-fast-day", "banana-boots", "polite-volcano", "bubble-bus"];
+const STORY_IMAGES = STORY_IDS.flatMap((story) =>
+  [1, 2, 3, 4].map((page) => `${BASE}stories/${story}-${page}.webp`),
+);
 const SHELL = [
   BASE,
   `${BASE}index.html`,
@@ -11,6 +15,7 @@ const SHELL = [
   `${BASE}icon.svg`,
   `${BASE}icon-192.png`,
   `${BASE}icon-512.png`,
+  ...STORY_IMAGES,
 ];
 const SHELL_URLS = new Set(SHELL.map((url) => new URL(url, BASE).href));
 
