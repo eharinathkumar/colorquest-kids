@@ -8,7 +8,7 @@ import ColorQuestApp from "./App";
 import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
 import { getLearningLesson, getLearningLessons, LEARNING_COUNTS } from "./learning-data";
 import { getScienceLabs, LAB_COUNTS } from "./lab-data";
-import { getFavoriteInterest, getLessonGuide, getMentorRecommendations } from "./mentor-data";
+import { getCuratedResource, getFavoriteInterest, getLessonGuide, getMentorRecommendations } from "./mentor-data";
 import { buildPuzzle, countPuzzles, getPuzzle, getPuzzleDeck, PUZZLE_FAMILIES } from "./puzzle-data";
 import { activityCount, COLORING_SCENE_COUNT } from "./content-counts";
 import { isSpeechSupported, joinForSpeech, rateForAge, shouldAutoRead, speak, stopSpeaking, toSpokenText } from "./speech";
@@ -16,6 +16,12 @@ import { makeGateChallenge } from "./GrownUpGate";
 import { artCredit, DiscoveryArt, sceneFor } from "./discovery-art";
 import { draftKey, loadDraft, saveDraft } from "./canvas-drafts";
 import { emptyProgress, PROFILE_STORAGE_KEY, recordCompletion, recordLocation, type FamilyData } from "./profile-data";
+import {
+  activityGroupsForAge,
+  isActivityAvailable,
+  safePageForActivity,
+  safeResumeLocation,
+} from "./activity-organization";
 
 vi.mock("@capacitor/filesystem", () => ({
   Directory: { Cache: "CACHE" },
@@ -280,11 +286,62 @@ describe("Varied puzzle catalog", () => {
     await user.click(screen.getByRole("button", { name: /Build puzzlesMatch, sort, sequence, reason/ }));
     expect(screen.getByText("Partner match")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Next activity" }));
+    await user.click(screen.getByRole("button", { name: "Next puzzle" }));
     expect(screen.getByText("Sort & classify")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Next activity" }));
+    await user.click(screen.getByRole("button", { name: "Next puzzle" }));
     expect(screen.getByText("Put in order")).toBeTruthy();
+  });
+});
+
+describe("Child-friendly activity organization", () => {
+  it("places every visible activity in one clear path for each age world", () => {
+    for (const age of [0, 1, 2, 3]) {
+      const groups = activityGroupsForAge(age);
+      expect(groups.map((group) => group.title)).toEqual(["Create", "Play & Read", "Learn & Discover"]);
+      const activities = groups.flatMap((group) => group.activities);
+      expect(new Set(activities).size).toBe(activities.length);
+      expect(activities.every((activity) => isActivityAvailable(activity, age))).toBe(true);
+      expect(activities.includes("stories")).toBe(age < 2);
+      expect(activities.includes("discover")).toBe(age >= 2);
+    }
+  });
+
+  it("repairs old or out-of-range resume targets before opening them", () => {
+    const progress = emptyProgress();
+    progress.lastActivity = "stories";
+    progress.activities.stories.lastPage = 99;
+    expect(safeResumeLocation(progress, 3)).toEqual({ activity: "draw", page: 1 });
+
+    progress.lastActivity = "puzzle";
+    progress.activities.puzzle.lastPage = 999;
+    expect(safeResumeLocation(progress, 1).page).toBe(activityCount("puzzle", 1));
+    expect(safePageForActivity("math", 2, 0)).toBe(1);
+
+    progress.lastActivity = "missing-route" as typeof progress.lastActivity;
+    expect(safeResumeLocation(progress, 1)).toEqual({ activity: "draw", page: 1 });
+  });
+
+  it("shows the three activity paths on Home", () => {
+    render(<ColorQuestApp />);
+    expect(screen.getByRole("heading", { name: "Create" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Play & Read" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Learn & Discover" })).toBeTruthy();
+  });
+
+  it("keeps every outside resource HTTPS and on an approved education host", () => {
+    const resources = [
+      getCuratedResource("science", "space"),
+      getCuratedResource("science", "earth"),
+      getCuratedResource("science", "experiments"),
+      getCuratedResource("math", "numbers"),
+    ];
+    const approvedHosts = new Set(["spaceplace.nasa.gov", "www.nesdis.noaa.gov", "phet.colorado.edu"]);
+    for (const resource of resources) {
+      const url = new URL(resource.url);
+      expect(url.protocol).toBe("https:");
+      expect(approvedHosts.has(url.hostname)).toBe(true);
+    }
   });
 });
 
