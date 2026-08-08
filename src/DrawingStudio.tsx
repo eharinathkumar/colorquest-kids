@@ -222,6 +222,7 @@ export default function DrawingStudio({
   const [savedMessage, setSavedMessage] = useState("");
   const [restored, setRestored] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<MobileToolPanel>("brush");
+  const [promptOpen, setPromptOpen] = useState(false);
   const dirty = useRef(false);
   const draftTimer = useRef<number | null>(null);
   const pendingDraft = useRef<Parameters<typeof saveDraft>[0] | null>(null);
@@ -503,6 +504,28 @@ export default function DrawingStudio({
 
   return (
     <div className="creative-board drawing-studio-v2">
+      <aside className={`creative-idea-drawer ${promptOpen ? "open" : ""}`}>
+        <button
+          type="button"
+          className="creative-idea-toggle"
+          aria-label={promptOpen ? "Hide creative idea" : "Show me an idea"}
+          aria-expanded={promptOpen}
+          aria-controls={`draw-idea-${age}-${page}`}
+          onClick={() => setPromptOpen((open) => !open)}
+        >
+          <span aria-hidden="true">✨</span>
+          <strong>{promptOpen ? "Hide the idea" : "Show me an idea"}</strong>
+          <small>{promptOpen ? "↑" : "↓"}</small>
+        </button>
+        {promptOpen && (
+          <div id={`draw-idea-${age}-${page}`} className="creative-idea-content">
+            <strong>{prompt}</strong>
+            <span>Use it, remix it, or invent your own idea.</span>
+            <SpeakButton id={`draw-prompt-${age}-${page}`} label="Hear the idea" text={[prompt, "Use it, remix it, or invent your own idea."]} />
+          </div>
+        )}
+      </aside>
+
       <nav className="mobile-art-dock" aria-label="Drawing tools">
         {([
           ["brush", "🖌️", "Brushes"],
@@ -578,12 +601,6 @@ export default function DrawingStudio({
       </section>
 
       <div className="canvas-stage advanced" style={{ background: backgroundStyle }}>
-        <div className="prompt-card">
-          <span>✨ Creative spark</span>
-          <strong>{prompt}</strong>
-          <small>Use it, remix it, or invent your own idea.</small>
-          <SpeakButton id={`draw-prompt-${age}-${page}`} label="Hear the idea" text={[prompt, "Use it, remix it, or invent your own idea."]} />
-        </div>
         <canvas
           ref={canvasRef}
           className="draw-canvas"

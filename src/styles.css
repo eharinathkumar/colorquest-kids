@@ -125,6 +125,7 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .creative-mode-switch { margin-top: 12px; padding: 5px; width: fit-content; border-radius: 15px; background: #e8edf2; display: flex; gap: 5px; }
 .creative-mode-switch button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 11px; background: transparent; color: #5d7084; font-weight: 850; cursor: pointer; }
 .creative-mode-switch button.active { background: white; color: var(--navy); box-shadow: 0 4px 10px #173b6d1c; }
+.creative-mode-switch .creative-mobile-home { display: none; }
 .recent-work-strip { margin: -6px 0 14px; padding: 9px; border: 1px solid #d8e6e2; border-radius: 18px; background: #eef9f6; display: flex; gap: 7px; overflow-x: auto; }
 .recent-work-strip > span { min-width: 120px; padding: 4px 8px; display: grid; align-content: center; gap: 3px; }
 .recent-work-strip > span strong { font-size: 12px; }
@@ -133,6 +134,12 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .recent-work-strip button b { font-size: 21px; }
 .recent-work-strip button span { display: grid; gap: 2px; font: 850 10px/1.2 system-ui, sans-serif; }
 .recent-work-strip button small { color: #6d827e; font: 750 8px/1 system-ui, sans-serif; }
+.recent-work-drawer { margin: -6px 0 14px; }
+.recent-work-toggle { min-height: 42px; padding: 7px 12px; border: 1px solid #c8ddd7; border-radius: 14px; background: #eef9f6; color: var(--navy); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.recent-work-toggle > span { font-size: 18px; }
+.recent-work-toggle strong { font: 850 11px/1 system-ui, sans-serif; }
+.recent-work-toggle small { margin-left: 4px; color: #55766f; font: 800 9px/1 system-ui, sans-serif; }
+.recent-work-drawer .recent-work-strip { margin: 7px 0 0; }
 .page-picker { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 17px; background: white; border: 1px solid #e5dccf; }
 .page-picker button { width: 42px; height: 42px; border: 0; border-radius: 12px; background: #edf6ff; color: var(--navy); font-size: 22px; cursor: pointer; }
 .page-picker button:disabled, .primary-button:disabled { cursor: default; opacity: .45; transform: none; box-shadow: none; }
@@ -158,9 +165,15 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .shape-tray button.active { border-color: var(--teal); background: #ddf7f0; box-shadow: 0 3px 8px #173b6d14; }
 .shape-tray em { margin-left: auto; max-width: 280px; color: #60778c; font: 650 11px/1.35 system-ui, sans-serif; }
 .canvas-stage { position: relative; }
-.prompt-card { position: absolute; z-index: 3; left: 16px; top: 16px; max-width: 250px; padding: 14px 17px; border-radius: 17px; background: #fff7d7ee; border: 1px solid #f1d568; display: grid; gap: 4px; box-shadow: 0 7px 14px #0001; pointer-events: none; }
-.prompt-card span, .prompt-card small { font: 750 11px/1.3 system-ui, sans-serif; color: #746629; }
-.prompt-card strong { font-size: 17px; }
+.creative-idea-drawer { margin: 0 0 9px; display: grid; justify-items: start; gap: 7px; }
+.creative-idea-toggle { min-height: 40px; padding: 6px 12px; border: 1px solid #ead277; border-radius: 13px; background: #fff7d7; color: #5f5425; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.creative-idea-toggle > span { font-size: 18px; }
+.creative-idea-toggle strong { font: 850 11px/1 system-ui, sans-serif; }
+.creative-idea-toggle small { margin-left: 3px; font-weight: 900; }
+.creative-idea-content { width: min(620px, 100%); padding: 10px 12px; border: 1px solid #ead277; border-radius: 14px; background: #fffaf0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; }
+.creative-idea-content strong { font-size: 15px; }
+.creative-idea-content > span { color: #746629; font: 700 10px/1.3 system-ui, sans-serif; }
+.creative-idea-content .speak-button { grid-column: 2; grid-row: 1 / span 2; }
 .draw-canvas { width: 100%; height: 520px; display: block; border: 2px dashed #d6c8b7; border-radius: 20px; background: #fffef9; touch-action: none; cursor: crosshair; }
 .tool-label { font-weight: 900; margin-right: 5px; }
 .color-board { padding-bottom: 80px; }
@@ -549,7 +562,6 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .shape-layer { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; overflow: visible; touch-action: none; pointer-events: none; }
 .shape-layer g { pointer-events: all; cursor: move; }
 .shape-layer .selection-ring { fill: none; stroke: #173b6d; stroke-width: 3; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; }
-.canvas-stage.advanced .prompt-card { z-index: 3; }
 .canvas-tip { margin: 9px 5px 0; color: #5e7489; text-align: center; font: 700 11px/1.35 system-ui, sans-serif; }
 
 /* Parent-managed profiles and gallery */
@@ -596,6 +608,11 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
   .learning-strip p { grid-column: 1 / -1; }
   .why-section { grid-template-columns: 1fr; }
   .studio-shell { grid-template-columns: 1fr; }
+  .creative-focus > .topbar,
+  .creative-focus .studio-sidebar { display: none; }
+  .creative-focus .studio-shell { min-height: 100svh; border-top: 0; }
+  .creative-focus .studio-content { padding-top: 10px; }
+  .creative-focus .creative-mode-switch .creative-mobile-home { width: 44px; flex: 0 0 44px; display: inline-grid; place-items: center; background: #fff; color: var(--navy); box-shadow: 0 4px 10px #173b6d1c; font-size: 21px; }
   .studio-sidebar { border-right: 0; border-bottom: 1px solid #eadfce; display: grid; grid-template-columns: auto 1fr; gap: 12px; }
   .studio-sidebar > .sidebar-label, .screen-break, .back-home { display: none; }
   .age-pills { display: flex; }
@@ -663,7 +680,6 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
   .shape-tray { gap: 6px; padding: 9px; }
   .shape-tray > span, .shape-tray em { width: 100%; max-width: none; margin: 0; }
   .shape-tray button { min-width: 48px; flex: 1; padding-inline: 4px; }
-  .prompt-card { left: 14px; top: 14px; max-width: 210px; }
   .draw-canvas { height: 480px; }
   .coloring-sheet svg { height: 430px; }
   .learn-bubble { position: static; margin: 12px 0 0; max-width: none; }
@@ -712,6 +728,20 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
   .profile-grid > button { min-height: 190px; }
   .profile-setup-card, .profile-hub-card { padding: 24px 16px; border-radius: 25px; }
   .drawing-studio-v2 { display: flex; flex-direction: column; padding: 8px; overflow: visible; }
+  .creative-focus .studio-content { padding-top: 8px; }
+  .creative-focus .studio-heading { gap: 7px; margin-bottom: 9px; }
+  .creative-focus .studio-heading > div:first-child > p,
+  .creative-focus .studio-heading > div:first-child > h2 { display: none; }
+  .creative-focus .creative-mode-switch { margin-top: 0; }
+  .creative-focus .page-picker { padding: 5px; border-radius: 14px; }
+  .creative-focus .page-picker button { width: 38px; height: 38px; }
+  .creative-focus .page-picker input { height: 34px; }
+  .creative-focus .recent-work-drawer { margin: 0 0 8px; }
+  .creative-focus .recent-work-toggle { min-height: 38px; }
+  .creative-idea-drawer { order: 0; margin-bottom: 7px; }
+  .creative-idea-toggle { min-height: 36px; }
+  .creative-idea-content { grid-template-columns: 1fr; }
+  .creative-idea-content .speak-button { grid-column: 1; grid-row: auto; width: 100%; }
   .drawing-studio-v2 .canvas-stage.advanced { order: 1; min-height: min(58svh, 560px); }
   .mobile-art-dock {
     order: 2; position: sticky; z-index: 12; bottom: max(8px, env(safe-area-inset-bottom));
@@ -741,8 +771,6 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
   .art-options-row .save-button { width: 100%; }
   .shape-picker > label { width: 100%; margin-left: 0; }
   .canvas-stage.advanced { min-height: min(58svh, 560px); }
-  .canvas-stage.advanced .prompt-card { max-width: calc(100% - 28px); padding: 9px 12px; }
-  .canvas-stage.advanced .prompt-card small { display: none; }
   .profile-management, .artwork-gallery { padding: 18px 12px; }
   .profile-manage-grid { grid-template-columns: 1fr; }
   .gallery-heading { align-items: stretch; flex-direction: column; }

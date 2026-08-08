@@ -108,6 +108,12 @@ describe("ColorQuest core journeys", () => {
 
     expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
     expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Leave Creative Studio" })).toBeTruthy();
+    expect(document.querySelector(".canvas-stage .prompt-card")).toBeNull();
+    const ideaButton = screen.getByRole("button", { name: "Show me an idea" });
+    expect(ideaButton.getAttribute("aria-expanded")).toBe("false");
+    await user.click(ideaButton);
+    expect(screen.getByText("Use it, remix it, or invent your own idea.")).toBeTruthy();
   });
 
   it("places and edits square and triangle shapes without blanking or resizing the mobile canvas", async () => {
@@ -180,6 +186,8 @@ describe("ColorQuest core journeys", () => {
     fireEvent.pointerMove(canvas, { clientX: 105, clientY: 125, pointerId: 9 });
     fireEvent.pointerUp(canvas, { clientX: 105, clientY: 125, pointerId: 9 });
 
+    const recentToggle = await screen.findByRole("button", { name: /Recent work/ });
+    await user.click(recentToggle);
     const recent = await screen.findByRole("navigation", { name: "Four most recent creative canvases" });
     expect(recent).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Next canvas" }));
