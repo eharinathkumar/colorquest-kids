@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { SpeakButton, useAutoSpeak } from "./SpeechProvider";
 import { getStoryBook, getStoryBooks } from "./story-data";
+import type { StoryBook } from "./story-data";
 import "./StorybookBoard.css";
+
+/** Speak the book title once, then keep later page narration inside the story. */
+export function narrationForStoryPage(story: StoryBook, storyPage: number) {
+  const current = story.pages[storyPage];
+  return storyPage === 0 ? [story.title, current.text] : current.text;
+}
 
 export default function StorybookBoard({
   age,
@@ -21,7 +28,7 @@ export default function StorybookBoard({
   const fullStory = useMemo(() => [story.title, ...story.pages.map((item) => item.text)], [story]);
 
   useEffect(() => setStoryPage(0), [story.id]);
-  useAutoSpeak([story.title, current.text], `story:${story.id}:${storyPage}`);
+  useAutoSpeak(narrationForStoryPage(story, storyPage), `story:${story.id}:${storyPage}`);
 
   const next = () => setStoryPage((currentPage) => Math.min(story.pages.length - 1, currentPage + 1));
   const previous = () => setStoryPage((currentPage) => Math.max(0, currentPage - 1));
@@ -92,4 +99,3 @@ export default function StorybookBoard({
     </section>
   );
 }
-

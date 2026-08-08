@@ -1,12 +1,12 @@
 # ColorQuest Kids test report
 
 Date: August 5, 2026  
-Build target: Android 2.4.1 (`versionCode` 9)  
+Build target: Android 2.5.0 (`versionCode` 10)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
 
-**PASS — 65 of 65 automated tests across seven test files.** The fully integrated source passed `npm run check` on August 5, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the organization and narration fixes were integrated.
+**PASS — 78 of 78 automated tests across eight test files.** The fully integrated source passed `npm run check` on August 5, 2026: TypeScript compilation completed and the GitHub Pages Vite build succeeded. The dependency audit reported **0 vulnerabilities**; the final Android-targeted build and synchronization were reproduced after the adaptive Math integration.
 
 Coverage includes:
 
@@ -31,6 +31,13 @@ Coverage includes:
 - 72 complete guided lessons, including 12 Math concepts in each older age world
 - Every guided lesson has three answer choices, a valid answer, explanation, vocabulary, and off-screen activity
 - Math answer feedback and age 10–12 Science content render correctly
+- Fresh adaptive Math questions remain stable during a render but change between rounds and reopenings
+- The engine avoids recent question signatures and retains a 48-question per-concept memory for each profile
+- Exact-age Math entry levels, accessible spoken choices, unique distractors, and valid answers across every Math concept
+- Challenge promotion requires repeated first-try success across representations; corrected mistakes are not counted as first-try mastery
+- Two misses activate concrete support, larger struggle can reduce the working level, and progress remains private to each profile
+- Readiness requires evidence across two mini-quests and three representations rather than a single correct tap
+- Age-two Math remains an unscored, two-choice Play & notice experience rather than a mastery quiz
 - Four-part concept story, alternate explanation, and on-device interest recording
 - Two age-aware mentor recommendations with named Math and Science paths
 - 47 distinct Science Labs: 8, 8, 15, and 16 across the four age worlds
@@ -72,7 +79,7 @@ npm audit --omit=dev
 
 The final verification found no `.map` files in either `dist/` or the synchronized `android/app/src/main/assets/public/` directory. Run `npm run android:sync` only after any future web changes are approved.
 
-The final GitHub Pages and Android bundles contain the local Fifi PNG, storybook CSS, all 24 bundled WebP story pages, and the v2.4.1 offline manifest. The compiled CSS contains the entrance, sparkle, and idle-float animations; a static rule check confirmed that speaking does not override the mascot wrapper's entrance animation.
+The final GitHub Pages and Android bundles contain the local Fifi PNG, storybook CSS, all 24 bundled WebP story pages, and the v2.5.0 offline manifest. The compiled CSS contains the entrance, sparkle, and idle-float animations; a static rule check confirmed that speaking does not override the mascot wrapper's entrance animation.
 
 ## Android configuration checks
 
@@ -87,8 +94,8 @@ The final GitHub Pages and Android bundles contain the local Fifi PNG, storybook
 - Parent-gated artwork export uses an app-private cache file and Android system share sheet
 - Production source-map generation disabled in Vite
 - Release R8 minification and Android resource shrinking enabled
-- Version set to 2.4.1 / code 9
-- Offline cache namespace set to v2.4.1, with all 24 story illustrations, forced asset revalidation, and no third-party/runtime response caching
+- Version set to 2.5.0 / code 10
+- Offline cache namespace set to v2.5.0, with all 24 story illustrations, forced asset revalidation, and no third-party/runtime response caching
 
 ## Remaining release and physical-device checks
 

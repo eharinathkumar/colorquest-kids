@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import StorybookBoard from "./StorybookBoard";
+import StorybookBoard, { narrationForStoryPage } from "./StorybookBoard";
 import { getStoryBooks, STORY_COUNTS } from "./story-data";
 
 vi.mock("./SpeechProvider", () => ({
@@ -20,6 +20,13 @@ describe("young children's storybooks", () => {
       expect(books.every((book) => book.pages.every((page) => page.text && page.image.endsWith(".webp") && page.alt))).toBe(true);
       expect(books.every((book) => book.noticeWord && book.wordMeaning && book.talkAbout)).toBe(true);
     }
+  });
+
+  it("reads the title once instead of repeating it on every page", () => {
+    const story = getStoryBooks(0)[0];
+    expect(narrationForStoryPage(story, 0)).toEqual([story.title, story.pages[0].text]);
+    expect(narrationForStoryPage(story, 1)).toBe(story.pages[1].text);
+    expect(narrationForStoryPage(story, 1)).not.toContain(story.title);
   });
 
   it("turns illustrated pages and completes only at the end", async () => {
@@ -47,4 +54,3 @@ describe("young children's storybooks", () => {
     expect(select).toHaveBeenCalledWith(2);
   });
 });
-

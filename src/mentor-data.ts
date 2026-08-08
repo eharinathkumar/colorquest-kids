@@ -130,7 +130,7 @@ export type CuratedResource = { title: string; provider: string; url: string; no
 export function getCuratedResource(subject: Subject, interest: InterestKey): CuratedResource {
   if (interest === "space") return { title: "Explore the Solar System", provider: "NASA Space Place", url: "https://spaceplace.nasa.gov/menu/solar-system/", note: "NASA games, crafts, pictures, and short explanations.", kind: "activity" };
   if (interest === "earth") return { title: "Weather and Earth Learning", provider: "NOAA Education", url: "https://www.nesdis.noaa.gov/about/k-12-education", note: "Official weather, satellite, ocean, and Earth resources.", kind: "video" };
-  if (subject === "science") return { title: "Try a Science Simulation", provider: "PhET · University of Colorado Boulder", url: "https://phet.colorado.edu/en/simulations/filter?subjects=physics,chemistry,earth-science,biology&type=html", note: "Free, research-based simulations. A grown-up can help choose one.", kind: "simulation" };
+  if (subject === "science") return { title: "Try a Science Simulation", provider: "PhET · University of Colorado Boulder", url: "https://phet.colorado.edu/en/simulations", note: "Free, research-based simulations. A grown-up can help choose one.", kind: "simulation" };
   return { title: "Try a Math Simulation", provider: "PhET · University of Colorado Boulder", url: "https://phet.colorado.edu/en/simulations/filter?subjects=math&type=html", note: "Free visual math simulations for learning by trying.", kind: "simulation" };
 }
 
