@@ -1,55 +1,37 @@
-# ColorQuest Kids 2.5.0 adaptive Math release
+# ColorQuest Kids 2.6.0 — Fifi's Creative Studio
 
-Release date: August 5, 2026  
-Web version: 2.5.0  
-Android version: 2.5.0 (`versionCode` 10)
+Release date: August 8, 2026  
+Web version: 2.6.0  
+Android version: 2.6.0 (`versionCode` 11)
 
 ## Headline changes
 
-- **Fresh questions, not a fixed quiz:** every Math concept generates changing values, visual groups, stories, and shuffled choices.
-- **Per-child repeat memory:** each profile remembers its recent question signatures and avoids the latest 48; a five-question mini-quest also guards its own active session.
-- **Exact-age starting points:** ages 4, 5, and 6 no longer start with identical ranges, and the same principle extends through age 12.
-- **Evidence before promotion:** challenge rises only after three of the latest four questions were solved on the first try, including the latest two, across at least two representations.
-- **Gentle recovery:** two first-try misses add concrete support; sustained difficulty can lower the working level without deleting earlier achievement.
-- **Meaningful readiness:** “Ready for a new challenge” requires five of six first-try successes across two quests and three representations—not one lucky tap.
-- **Youngest-child care:** ages 1–2 receive two-choice, unscored Play & notice prompts; age 3 begins with two accessible choices.
-- **Transparent parent view:** Parent Corner reports fresh questions tried and independent first-try successes without grades or child comparisons.
+- **One Creative Studio:** Draw and Color now sit in one clearly named path with a two-button mode switch, while retaining independent progress and resume positions.
+- **27 distinct coloring scenes:** the former ten-scene loop is replaced by hand-built offline SVG artwork covering recognizable animals, gardens, landscapes, fantasy, transport, and space.
+- **Animals that read as animals:** lion, elephant, red panda, sea turtle, penguin, fox, giraffe, rabbit, whale, owl, horse, frog, toucan, octopus, tiger, koala, butterfly, dinosaur, cat, and more have species-specific silhouettes and details.
+- **26 paints:** 18 solid colors and eight gradients are shared by drawing and coloring. Younger children start with solids and can reveal “magic colors”; older children see the full palette.
+- **Richer drawing tools:** ten brushes now include marker, pencil, crayon, chalk, watercolor, spray, rainbow, sparkle, pattern, and eraser.
+- **More building pieces:** 12 editable shapes include circles, ovals, squares, rectangles, triangles, diamonds, stars, hearts, moons, clouds, arrows, and speech bubbles.
+- **More base paint:** ten solid and gradient canvas backgrounds include meadow and rainbow mist.
+- **Quiet recent-work safety:** Draw and Color silently keep only the four most recently edited canvases per child. This working history is separate from the permanent family gallery.
+- **No leave-page interruption:** children can use Home, profiles, age/activity controls, arrows, page picker, Next, or Parent Corner without a confirmation popup.
+- **Saving is deliberate:** both Draw and Color have a visible **Save to gallery** button. Only pictures a child chooses are added to the family gallery.
+- **Coloring as storytelling:** every page includes one accurate animal/nature fact and an imagination prompt with read-aloud support.
+- **Responsive and offline:** SVG artwork remains sharp on phones and tablets, needs no live image requests, and is included in the PWA and Android bundle.
 
-- **One child-friendly map:** Home and Studio now use the same Create, Play & Read, and Learn & Discover grouping.
-- **Age-safe exploration:** storybooks appear only in the two younger worlds and Discovery appears only in the two older worlds; invalid saved destinations fall back safely.
-- **No surprise page loops:** previous/next controls stop at the boundaries and clearly mark the end of a catalog.
-- **Story narration repaired:** a book title is automatically spoken on the opening page only, rather than before every page.
-- **Dead-link protection:** automated tests restrict outside resources to approved HTTPS education hosts; all four current NASA, NOAA, and PhET destinations were also opened successfully on August 5, 2026.
+The adaptive Math, Science, Labs, storybooks, puzzles, profiles, progress, Fifi guidance, and existing saved family artwork from 2.5 remain intact.
 
-- **Six original picture books:** three books for ages 1–3 and three for ages 4–6, with 24 original local illustrations, funny four-page stories, narration, vocabulary, and imagination prompts.
-- **Self-paced reading:** children can hear one page or the whole book, revisit any page, switch books from the shelf, and record completion only when they choose.
-- **Older Math expansion:** ages 7–9 and 10–12 now have 12 concepts each, including decimals, measurement, coordinates, patterns, rates, and two-step equations.
-- **Older Science expansion:** the two older worlds now offer 15 and 16 labs with broader physics, chemistry, life, Earth, climate, sound, and astronomy coverage.
-- **Layered lab explanations:** new vocabulary and real-world connections appear after prediction, steps, and evidence—not before.
-- **Cuter Fifi:** brighter age-aware character delivery, a larger squash-and-stretch multi-hop, sparkle trail, gentle floating, and synchronized talking mouth.
-- **Fresh offline rollout:** all 24 story images are in the versioned offline shell, and the Fifi greeting marker is refreshed for this release.
+## Verification
 
-- **Fifi the Color Spark:** original local mascot art and accessible in-app guidance for drawing exits, autosave, start-over, and one-time creative tips.
-- **Fifi comes alive:** short hop-in greeting, comic speech callout, synchronized mouth pose, and a cuter character voice layered over the existing age-aware narration.
-- **No browser-origin drawing warning:** all studio exit routes now open Fifi; the child can stay or leave knowing the private draft will restore.
-- **Better drawing on phones:** canvas-first layout, sticky Brushes / Base paint / Shapes dock, debounced draft saves, coalesced storage writes, and safe shape editing.
-- **Puzzle variety repaired:** the visible board now uses the deduplicated puzzle deck; every advertised puzzle page is unique before the deck repeats.
-- **Age-aware narration:** automatically chosen high-quality English voices, different delivery profiles for the four age worlds, a Parent Corner voice picker, and truthful on-device/network labels.
-- **More content can be heard:** puzzle choices, lab predictions/materials/steps/observations, concept stories, and every Discovery story/imagination/math card.
-- **Release hardening:** versioned offline cache, forced fresh asset checks, no production source maps, Android R8/resource shrinking, and synced Android assets.
-
-## Verified here
-
-- `npm run check`: **78/78 tests passed**, TypeScript passed, production web build passed.
-- `npm audit --omit=dev`: **0 vulnerabilities**.
-- `npm run android:sync`: Android-targeted web build passed and copied successfully.
-- No `.map` files in the web or Android asset bundles.
-- Final web and Android bundles contain Fifi's local art, storybook CSS, all 24 story images, and the v2.5.0 offline manifest.
+- Automated tests cover the complete existing app plus Creative Studio catalog uniqueness, subject breadth, palette size, real gradient generation, silent navigation, and coloring interaction.
+- TypeScript and the production GitHub Pages build pass.
+- Android assets are synchronized from the same tested source.
+- Production source maps remain disabled; Android release minification and resource shrinking remain enabled.
 
 ## Still required on your computer
 
-Open the included `android/` folder in Android Studio, let it download Gradle/SDK dependencies, run on a physical phone, and create a signed release `.aab`. Follow `ANDROID_RELEASE.md`; a signed native release cannot be produced here without your private signing key.
+Open the included `android/` folder in Android Studio, run on a physical phone and tablet, then create a signed release `.aab`. Follow `ANDROID_RELEASE.md`; the private signing key is intentionally not included.
 
 ## GitHub Pages update
 
-Copy the release files into the root of the existing `colorquest-kids` repository, preserving `.github/workflows/deploy-pages.yml`, then commit and push to `main`. Do not upload `node_modules`. GitHub Actions will run `npm ci`, build, and deploy the site.
+Copy the release contents into the root of the existing `colorquest-kids` repository and keep only `.github/workflows/deploy-pages.yml`. Do not upload `node_modules` or the release ZIP. Commit and push to `main`; GitHub Actions will build and deploy the site.

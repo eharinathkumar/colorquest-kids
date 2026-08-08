@@ -14,6 +14,7 @@ import { Share } from "@capacitor/share";
 import { buildDiscoveryMission, DISCOVERY_COUNTS } from "./discovery-data";
 import ArtworkGallery from "./ArtworkGallery";
 import DrawingStudio from "./DrawingStudio";
+import ColoringStudio from "./ColoringStudio";
 import LearningBoard from "./LearningBoard";
 import ScienceLabBoard from "./ScienceLab";
 import StorybookBoard from "./StorybookBoard";
@@ -36,6 +37,7 @@ import { GrownUpGate } from "./GrownUpGate";
 import { SpeakButton, SpeechProvider, useAutoSpeak, useSpeech } from "./SpeechProvider";
 import { isSpeechSupported, voiceProfileForAge } from "./speech";
 import FifiGuide from "./FifiGuide";
+import { loadRecentDrafts, type CanvasDraft } from "./canvas-drafts";
 import { getBookSuggestions, getFavoriteInterest, getMentorRecommendations, INTERESTS } from "./mentor-data";
 import {
   ageWorldFor,
@@ -716,6 +718,7 @@ function Studio({
   onParents,
   onProfiles,
   onSaveArtwork,
+  onOpenRecent,
 }: {
   profile: ChildProfile;
   profileProgress: ProfileProgress;
@@ -739,14 +742,14 @@ function Studio({
   onParents: () => void;
   onProfiles: () => void;
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
+  onOpenRecent: (activity: "draw" | "color", ageWorld: number, page: number) => void;
 }) {
   const total = activityCount(activity, age);
   const unit = activityUnit(activity);
   const pluralUnit = activityNoun(activity, total);
-  const [drawingUnsaved, setDrawingUnsaved] = useState(false);
-  const [pendingDrawingExit, setPendingDrawingExit] = useState<null | (() => void)>(null);
   const [pendingStartOver, setPendingStartOver] = useState<null | (() => void)>(null);
   const [fifiTipOpen, setFifiTipOpen] = useState(false);
+  const [recentWork, setRecentWork] = useState<CanvasDraft[]>([]);
   const fifiMascot = `${import.meta.env.BASE_URL}mascot/fifi-color-spark.png`;
 
   const fifiTips: Record<Activity, string> = {
@@ -769,6 +772,17 @@ function Studio({
     }
   }, [profile.id, activity]);
 
+  useEffect(() => {
+    let active = true;
+    const refresh = () => { void loadRecentDrafts(profile.id).then((drafts) => { if (active) setRecentWork(drafts); }); };
+    const onDraftSaved = (event: Event) => {
+      if ((event as CustomEvent<{ profileId?: string }>).detail?.profileId === profile.id) refresh();
+    };
+    refresh();
+    window.addEventListener("colorquest:draft-saved", onDraftSaved);
+    return () => { active = false; window.removeEventListener("colorquest:draft-saved", onDraftSaved); };
+  }, [profile.id]);
+
   const dismissFifiTip = () => {
     try {
       window.localStorage.setItem(`colorquest-fifi-tip-v1:${profile.id}:${activity}`, "seen");
@@ -778,18 +792,9 @@ function Studio({
     setFifiTipOpen(false);
   };
 
-  /**
-   * Leaving the Drawing Studio used to blank the canvas silently — and "Next
-   * activity" was the biggest button on the screen. The picture is autosaved
-   * now, but a child who taps away still deserves to be told what happens.
-   */
-  const guard = (action: () => void) => () => {
-    if (activity === "draw" && drawingUnsaved && typeof window !== "undefined") {
-      setPendingDrawingExit(() => action);
-      return;
-    }
-    action();
-  };
+  // Recent creative work is silently autosaved, so navigation never interrupts
+  // a child with a leave-page confirmation.
+  const guard = (action: () => void) => () => action();
   const completedHere = profileProgress.activities[activity].completed.includes(`${age}:${page}`);
 
   return (
@@ -828,7 +833,13 @@ function Studio({
           <div className="studio-heading">
             <div>
               <p>{AGE_GROUPS[age].label} · {AGE_GROUPS[age].skill}</p>
-              <h2>{ACTIVITY_META[activity].title} adventure</h2>
+              <h2>{activity === "draw" || activity === "color" ? "Creative Studio" : `${ACTIVITY_META[activity].title} adventure`}</h2>
+              {(activity === "draw" || activity === "color") && (
+                <div className="creative-mode-switch" aria-label="Creative Studio mode">
+                  <button className={activity === "draw" ? "active" : ""} onClick={() => onActivity("draw")} aria-pressed={activity === "draw"}>✏️ Draw freely</button>
+                  <button className={activity === "color" ? "active" : ""} onClick={() => onActivity("color")} aria-pressed={activity === "color"}>🎨 Color a picture</button>
+                </div>
+              )}
             </div>
             <div className="page-picker">
               <button onClick={guard(() => onPage(page - 1))} aria-label={`Previous ${unit.toLowerCase()}`} disabled={page === 1}>←</button>
@@ -841,8 +852,19 @@ function Studio({
             </div>
           </div>
 
-          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onDirtyChange={setDrawingUnsaved} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}
-          {activity === "color" && <ColoringBoard key={`c-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
+          {(activity === "draw" || activity === "color") && recentWork.length > 0 && (
+            <nav className="recent-work-strip" aria-label="Four most recent creative canvases">
+              <span><strong>Recent work</strong><small>Saved quietly on this device</small></span>
+              {recentWork.map((draft, index) => {
+                const [, draftActivity, draftAge, draftPage] = draft.id.split(":");
+                const canOpen = draftActivity === "draw" || draftActivity === "color";
+                return <button key={draft.id} disabled={!canOpen} onClick={() => { if (canOpen) onOpenRecent(draftActivity, Number(draftAge), Number(draftPage)); }}><b>{draftActivity === "color" ? "🎨" : "✏️"}</b><span>{draftActivity === "color" ? "Color page" : "Draw canvas"} {draftPage}<small>{index === 0 ? "Newest" : "Recent"}</small></span></button>;
+              })}
+            </nav>
+          )}
+
+          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}
+          {activity === "color" && <ColoringStudio key={`c-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} />}
           {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "stories" && <StorybookBoard key={`story-${page}-${age}`} page={page} age={age} onSelectBook={onPage} onComplete={onComplete} />}
           {(activity === "math" || activity === "science") && <LearningBoard key={`l-${activity}-${page}-${age}-${profile.id}`} subject={activity} page={page} age={age} childAge={profile.age} profileId={profile.id} liked={profileProgress.learning.likedLessons.includes(getLearningLessons(activity, age)[page - 1].id)} mathPractice={profileProgress.learning.mathPractice?.[getLearningLessons(activity, age)[page - 1].id]} mathJourney={profileProgress.learning.mathJourney || []} onComplete={onComplete} onAttempt={() => onLearningAttempt(activity)} onMathAnswer={onMathAnswer} onLike={onLikeLesson} onSelectLesson={onPage} />}
@@ -854,18 +876,6 @@ function Studio({
             <button className="primary-button" disabled={page === total} onClick={guard(() => onPage(page + 1))}>{page === total ? `All ${pluralUnit} explored ✓` : `Next ${unit.toLowerCase()} →`}</button>
           </div>
 
-          <FifiGuide
-            open={Boolean(pendingDrawingExit)}
-            mode="leave-drawing"
-            childName={profile.name}
-            mascotSrc={fifiMascot}
-            onStay={() => setPendingDrawingExit(null)}
-            onLeave={() => {
-              const action = pendingDrawingExit;
-              setPendingDrawingExit(null);
-              action?.();
-            }}
-          />
           <FifiGuide
             open={Boolean(pendingStartOver)}
             mode="start-over"
@@ -879,7 +889,7 @@ function Studio({
             }}
           />
           <FifiGuide
-            open={fifiTipOpen && !pendingDrawingExit && !pendingStartOver}
+            open={fifiTipOpen && !pendingStartOver}
             mode="tip"
             childName={profile.name}
             mascotSrc={fifiMascot}
@@ -1215,6 +1225,16 @@ export default function ColorQuestApp() {
     if (activeProfile) setFamily((current) => recordLocation(current, activeProfile.id, activity, safePage));
   };
 
+  const openRecentCreative = (nextActivity: "draw" | "color", nextAge: number, nextPage: number) => {
+    if (!activeProfile) return;
+    const safeAge = Math.max(0, Math.min(AGE_GROUPS.length - 1, nextAge));
+    const safePage = safePageForActivity(nextActivity, safeAge, nextPage);
+    setAge(safeAge);
+    setActivity(nextActivity);
+    setPage(safePage);
+    setFamily((current) => recordLocation(current, activeProfile.id, nextActivity, safePage));
+  };
+
   const saveArtwork = async (dataUrl: string, title: string) => {
     if (!activeProfile) return;
     await addArtwork({ profileId: activeProfile.id, title, dataUrl });
@@ -1252,7 +1272,7 @@ export default function ColorQuestApp() {
     : view === "profiles"
       ? <ProfileHub profiles={family.profiles} activeProfileId={activeProfile.id} onSelect={selectProfile} onAdd={() => setView("profile-new")} onBack={() => setView("home")} />
       : view === "studio"
-        ? <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onMathAnswer={mathAnswer} onLikeLesson={likeLesson} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} />
+        ? <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onMathAnswer={mathAnswer} onLikeLesson={likeLesson} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} onOpenRecent={openRecentCreative} />
         : view === "parents"
           ? <ParentCorner family={family} activeProfile={activeProfile} age={age} artworkRevision={artworkRevision} onHome={() => setView("home")} onProfiles={() => setView("profiles")} onUpdateProfile={updateProfile} onDeleteProfile={deleteProfile} />
           : <Home age={age} profileProgress={activeProgress} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || safeResume.page > 1} onAge={changeAge} onStart={start} onStartLesson={(subject, lessonPage) => start(subject, false, lessonPage)} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;

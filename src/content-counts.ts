@@ -15,8 +15,8 @@ import type { ActivityKey } from "./profile-data";
  * itself rather than written down.
  */
 
-/** Distinct coloring scenes drawn in `ColoringScene`. */
-export const COLORING_SCENE_COUNT = 10;
+/** Distinct, hand-built SVG coloring scenes in the Creative Studio. */
+export const COLORING_SCENE_COUNT = 27;
 
 /** Distinct creative prompts per age band in the Drawing Studio. */
 export const DRAW_PROMPT_COUNT = 6;

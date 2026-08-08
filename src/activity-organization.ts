@@ -12,8 +12,8 @@ export type ActivityGroup = {
 export const ACTIVITY_GROUPS: ActivityGroup[] = [
   {
     id: "create",
-    title: "Create",
-    description: "Make something of your own.",
+    title: "Creative Studio",
+    description: "Draw, color, and build in one art space.",
     activities: ["draw", "color"],
   },
   {

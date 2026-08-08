@@ -2,7 +2,7 @@
 
 The Android project wraps the same tested ColorQuest experience and bundles its web files inside the application. It does not load the GitHub Pages site as its main screen.
 
-Release target: **ColorQuest Kids 2.5.0**, `versionCode` **10**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
+Release target: **ColorQuest Kids 2.6.0**, `versionCode` **11**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
 
 ## What is ready
 
@@ -13,12 +13,13 @@ Release target: **ColorQuest Kids 2.5.0**, `versionCode` **10**. Google Play req
 - Multiple on-device child profiles with age-personalized starting worlds and separate progress
 - Fresh adaptive Math mini-quests with per-profile repeat memory, exact-age starting difficulty, gentle support, and evidence-based progression
 - Self-paced resume points with no streaks, deadlines, or locked lesson path
-- Layered Drawing Studio with eight brushes, six base paints, and movable/editable vector shapes
-- Fifi's in-app autosave/start-over guide replaces browser-origin confirmation alerts and works as a mobile bottom sheet
+- Unified Creative Studio with ten brushes, ten base paints, 26 solid/gradient paints, and 12 movable/editable vector shapes
+- 27 distinct, scalable offline coloring scenes with recognizable animals, nature, fantasy, vehicles, and space
+- Quiet four-canvas recent-work autosave; children leave freely and use **Save to gallery** only when they choose
 - Fifi now hops in, speaks through a comic callout, and animates his mouth while his age-aware character voice is active
 - Six narrated, illustrated, offline storybooks for ages 1–3 and 4–6, with vocabulary and imagination prompts
 - Storybook auto-reading says the title once on the opening page, then reads only the current page
-- Consistent Create, Play & Read, and Learn & Discover paths on both Home and Studio
+- Consistent Creative Studio, Play & Read, and Learn & Discover paths on both Home and Studio
 - Age-safe resume routing plus bounded previous/next navigation with a clear end state
 - Age-aware narration, selectable English voices, and expanded puzzle/lab/Discovery read-aloud coverage
 - Private on-device artwork gallery with parent-controlled Android share/export
@@ -54,12 +55,12 @@ The normal Android Studio **Run** button creates a debug build and does not prov
 - Test all four age groups.
 - Create two profiles of different ages, switch between them, and verify their resume positions remain separate.
 - Close and reopen the app; confirm profiles, progress, and artwork remain available.
-- Try every brush, base paint, and color with both finger and stylus if available.
+- Try every brush, base paint, solid color, and gradient with both finger and stylus if available.
 - Test Tiny, Small, Big, and Giant brush presets, then fine-adjust the slider.
 - Place every shape near all four canvas edges; move, resize, rotate, duplicate, recolor, and remove it.
 - Test **Undo** and **New page** after combining brush strokes, shapes, and base paint.
-- Draw a stroke, then try every way out of the studio; confirm Fifi appears, **Stay & draw** keeps the canvas, and **Keep it safe and leave** restores the draft later.
-- Color at least one complete animal, tulip garden, and landscape.
+- Draw a stroke, then try every way out of the studio; confirm there is no popup and the recent canvas restores when reopened.
+- Color at least one complete animal, tulip garden, landscape, gradient-filled scene, and space scene; save one chosen page to the gallery.
 - Read one picture book in each younger age world; test page narration, whole-story narration, page dots, bookshelf switching, and completion tracking.
 - Complete at least one matching, sorting, sequencing, pattern, odd-one-out, and clue-solving puzzle.
 - Page through the complete advertised puzzle total in each age world and confirm no puzzle repeats before the final page.

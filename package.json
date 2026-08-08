@@ -1,6 +1,6 @@
 {
   "name": "colorquest-kids-pwa",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,11 +19,8 @@
     "@capacitor/core": "^8.5.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/share": "^8.0.1",
-    "@vitejs/plugin-react": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "typescript": "latest",
-    "vite": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
@@ -31,8 +28,11 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
     "esbuild": "^0.28.1",
     "jsdom": "^29.0.0",
+    "typescript": "latest",
+    "vite": "latest",
     "vitest": "^4.1.10"
   }
 }

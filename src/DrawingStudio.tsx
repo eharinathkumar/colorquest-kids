@@ -1,9 +1,10 @@
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { deleteDraft, draftKey, loadDraft, saveDraft } from "./canvas-drafts";
 import { SpeakButton, useAutoSpeak } from "./SpeechProvider";
+import { ART_PAINTS, DEFAULT_PAINT, canvasPaint, getArtPaint, paintCss, safeSvgId } from "./art-palette";
 
-type BrushKind = "marker" | "pencil" | "crayon" | "chalk" | "watercolor" | "rainbow" | "sparkle" | "eraser";
-type StampShape = "circle" | "square" | "triangle" | "diamond" | "star" | "heart" | "moon" | "cloud";
+type BrushKind = "marker" | "pencil" | "crayon" | "chalk" | "watercolor" | "spray" | "rainbow" | "sparkle" | "pattern" | "eraser";
+type StampShape = "circle" | "oval" | "square" | "rectangle" | "triangle" | "diamond" | "star" | "heart" | "moon" | "cloud" | "arrow" | "bubble";
 
 type ShapeItem = {
   id: string;
@@ -18,33 +19,41 @@ type ShapeItem = {
 type CanvasHistory = { ink: string; shapes: ShapeItem[]; background: string };
 type MobileToolPanel = "brush" | "paint" | "shape";
 
-const COLORS = ["#ff604f", "#ffd65a", "#24bca4", "#55aaf5", "#7857d6", "#f58bbb", "#173b6d", "#ffffff"];
 const BRUSHES: Array<{ id: BrushKind; icon: string; label: string }> = [
   { id: "marker", icon: "🖌️", label: "Paint" },
   { id: "pencil", icon: "✏️", label: "Pencil" },
   { id: "crayon", icon: "🖍️", label: "Crayon" },
   { id: "chalk", icon: "▰", label: "Chalk" },
   { id: "watercolor", icon: "💧", label: "Watercolor" },
+  { id: "spray", icon: "⋰", label: "Spray" },
   { id: "rainbow", icon: "🌈", label: "Rainbow" },
   { id: "sparkle", icon: "✨", label: "Stars" },
+  { id: "pattern", icon: "✿", label: "Pattern" },
   { id: "eraser", icon: "🧽", label: "Eraser" },
 ];
 const SHAPES: Array<{ shape: StampShape; icon: string; label: string }> = [
   { shape: "circle", icon: "●", label: "Circle" },
+  { shape: "oval", icon: "⬭", label: "Oval" },
   { shape: "square", icon: "■", label: "Square" },
+  { shape: "rectangle", icon: "▬", label: "Rectangle" },
   { shape: "triangle", icon: "▲", label: "Triangle" },
   { shape: "diamond", icon: "◆", label: "Diamond" },
   { shape: "star", icon: "★", label: "Star" },
   { shape: "heart", icon: "♥", label: "Heart" },
   { shape: "moon", icon: "☾", label: "Moon" },
   { shape: "cloud", icon: "☁", label: "Cloud" },
+  { shape: "arrow", icon: "➜", label: "Arrow" },
+  { shape: "bubble", icon: "▱", label: "Speech bubble" },
 ];
 const BACKGROUNDS = [
   { id: "paper", label: "Paper", style: "#fffef9", colors: ["#fffef9"] },
   { id: "sunshine", label: "Sunshine", style: "#fff1b8", colors: ["#fff1b8"] },
   { id: "mint", label: "Mint", style: "#dff8ee", colors: ["#dff8ee"] },
+  { id: "blush", label: "Blush", style: "#ffe5ee", colors: ["#ffe5ee"] },
   { id: "ocean", label: "Ocean", style: "linear-gradient(160deg,#bcecff,#4f9fea)", colors: ["#bcecff", "#4f9fea"] },
   { id: "sunset", label: "Sunset", style: "linear-gradient(160deg,#ffd77a,#f58bbb,#7c65d8)", colors: ["#ffd77a", "#f58bbb", "#7c65d8"] },
+  { id: "meadow", label: "Meadow", style: "linear-gradient(180deg,#bcecff 0 55%,#8fd16a 55% 100%)", colors: ["#bcecff", "#8fd16a"] },
+  { id: "rainbow-mist", label: "Rainbow mist", style: "linear-gradient(135deg,#ffe3e0,#fff0a5,#c9f5dc,#cde8ff,#e6d7ff)", colors: ["#ffe3e0", "#fff0a5", "#c9f5dc", "#cde8ff", "#e6d7ff"] },
   { id: "space", label: "Space", style: "linear-gradient(160deg,#172c55,#321a56,#090f24)", colors: ["#172c55", "#321a56", "#090f24"] },
 ];
 
@@ -85,12 +94,15 @@ function drawStamp(ctx: CanvasRenderingContext2D, item: ShapeItem) {
   ctx.rotate((rotation * Math.PI) / 180);
   ctx.translate(-x, -y);
   ctx.beginPath();
-  ctx.fillStyle = color;
-  ctx.strokeStyle = color === "#ffffff" ? "#9aabba" : color;
+  const solidFallback = getArtPaint(color).colors[0];
+  ctx.fillStyle = canvasPaint(ctx, color, x - radius, y - radius, x + radius, y + radius);
+  ctx.strokeStyle = solidFallback === "#ffffff" ? "#9aabba" : solidFallback;
   ctx.lineWidth = 3;
 
   if (shape === "circle") ctx.arc(x, y, radius, 0, Math.PI * 2);
+  else if (shape === "oval") ctx.ellipse(x, y, radius * 1.25, radius * .75, 0, 0, Math.PI * 2);
   else if (shape === "square") ctx.rect(x - radius, y - radius, radius * 2, radius * 2);
+  else if (shape === "rectangle") ctx.rect(x - radius * 1.3, y - radius * .72, radius * 2.6, radius * 1.44);
   else if (shape === "triangle") {
     ctx.moveTo(x, y - radius); ctx.lineTo(x + radius, y + radius); ctx.lineTo(x - radius, y + radius); ctx.closePath();
   } else if (shape === "diamond") {
@@ -112,16 +124,35 @@ function drawStamp(ctx: CanvasRenderingContext2D, item: ShapeItem) {
   } else if (shape === "moon") {
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.arc(x + radius * 0.48, y - radius * 0.12, radius * 0.82, Math.PI * 0.45, Math.PI * 1.55, true);
-  } else {
+  } else if (shape === "cloud") {
     ctx.arc(x - radius * 0.42, y, radius * 0.48, Math.PI, Math.PI * 2);
     ctx.arc(x, y - radius * 0.28, radius * 0.58, Math.PI, Math.PI * 2);
     ctx.arc(x + radius * 0.48, y, radius * 0.44, Math.PI, Math.PI * 2);
     ctx.lineTo(x + radius * 0.9, y + radius * 0.45);
     ctx.lineTo(x - radius * 0.9, y + radius * 0.45);
     ctx.closePath();
+  } else if (shape === "arrow") {
+    ctx.moveTo(x - radius, y - radius * .3); ctx.lineTo(x + radius * .2, y - radius * .3);
+    ctx.lineTo(x + radius * .2, y - radius * .72); ctx.lineTo(x + radius, y);
+    ctx.lineTo(x + radius * .2, y + radius * .72); ctx.lineTo(x + radius * .2, y + radius * .3);
+    ctx.lineTo(x - radius, y + radius * .3); ctx.closePath();
+  } else {
+    ctx.moveTo(x - radius * .75, y - radius * .65);
+    ctx.lineTo(x + radius * .75, y - radius * .65);
+    ctx.quadraticCurveTo(x + radius, y - radius * .65, x + radius, y - radius * .4);
+    ctx.lineTo(x + radius, y + radius * .4);
+    ctx.quadraticCurveTo(x + radius, y + radius * .65, x + radius * .75, y + radius * .65);
+    ctx.lineTo(x + radius * .05, y + radius * .65);
+    ctx.moveTo(x - radius * .28, y + radius * .65); ctx.lineTo(x - radius * .52, y + radius);
+    ctx.lineTo(x + radius * .05, y + radius * .65);
+    ctx.lineTo(x - radius * .75, y + radius * .65);
+    ctx.quadraticCurveTo(x - radius, y + radius * .65, x - radius, y + radius * .4);
+    ctx.lineTo(x - radius, y - radius * .4);
+    ctx.quadraticCurveTo(x - radius, y - radius * .65, x - radius * .75, y - radius * .65);
+    ctx.closePath();
   }
   ctx.fill();
-  if (color === "#ffffff") ctx.stroke();
+  if (solidFallback === "#ffffff") ctx.stroke();
   ctx.restore();
 }
 
@@ -140,13 +171,17 @@ function backgroundToCanvas(ctx: CanvasRenderingContext2D, width: number, height
 function ShapeGlyph({ item }: { item: ShapeItem }) {
   const s = item.size;
   if (item.shape === "circle") return <circle cx={item.x} cy={item.y} r={s} />;
+  if (item.shape === "oval") return <ellipse cx={item.x} cy={item.y} rx={s * 1.25} ry={s * .75} />;
   if (item.shape === "square") return <rect x={item.x - s} y={item.y - s} width={s * 2} height={s * 2} rx={s * 0.08} />;
+  if (item.shape === "rectangle") return <rect x={item.x - s * 1.3} y={item.y - s * .72} width={s * 2.6} height={s * 1.44} rx={s * .08} />;
   if (item.shape === "triangle") return <polygon points={`${item.x},${item.y - s} ${item.x + s},${item.y + s} ${item.x - s},${item.y + s}`} />;
   if (item.shape === "diamond") return <polygon points={`${item.x},${item.y - s} ${item.x + s},${item.y} ${item.x},${item.y + s} ${item.x - s},${item.y}`} />;
   if (item.shape === "star") return <polygon points={starPath(item.x, item.y, s)} />;
   if (item.shape === "heart") return <path d={`M ${item.x} ${item.y + s * .82} C ${item.x - s * 1.35} ${item.y}, ${item.x - s * .72} ${item.y - s}, ${item.x} ${item.y - s * .3} C ${item.x + s * .72} ${item.y - s}, ${item.x + s * 1.35} ${item.y}, ${item.x} ${item.y + s * .82} Z`} />;
   if (item.shape === "moon") return <path fillRule="evenodd" d={`M ${item.x} ${item.y - s} A ${s} ${s} 0 1 0 ${item.x} ${item.y + s} A ${s} ${s} 0 1 0 ${item.x} ${item.y - s} M ${item.x + s * .45} ${item.y - s * .75} A ${s * .82} ${s * .82} 0 1 1 ${item.x + s * .45} ${item.y + s * .75} A ${s * .68} ${s * .68} 0 0 0 ${item.x + s * .45} ${item.y - s * .75}`} />;
-  return <path d={`M ${item.x - s * .9} ${item.y + s * .45} C ${item.x - s} ${item.y}, ${item.x - s * .55} ${item.y - s * .45}, ${item.x - s * .25} ${item.y - s * .25} C ${item.x - s * .08} ${item.y - s}, ${item.x + s * .55} ${item.y - s * .7}, ${item.x + s * .55} ${item.y - s * .15} C ${item.x + s} ${item.y - s * .1}, ${item.x + s} ${item.y + s * .45}, ${item.x + s * .72} ${item.y + s * .45} Z`} />;
+  if (item.shape === "cloud") return <path d={`M ${item.x - s * .9} ${item.y + s * .45} C ${item.x - s} ${item.y}, ${item.x - s * .55} ${item.y - s * .45}, ${item.x - s * .25} ${item.y - s * .25} C ${item.x - s * .08} ${item.y - s}, ${item.x + s * .55} ${item.y - s * .7}, ${item.x + s * .55} ${item.y - s * .15} C ${item.x + s} ${item.y - s * .1}, ${item.x + s} ${item.y + s * .45}, ${item.x + s * .72} ${item.y + s * .45} Z`} />;
+  if (item.shape === "arrow") return <path d={`M ${item.x - s} ${item.y - s * .3} H ${item.x + s * .2} V ${item.y - s * .72} L ${item.x + s} ${item.y} L ${item.x + s * .2} ${item.y + s * .72} V ${item.y + s * .3} H ${item.x - s} Z`} />;
+  return <path d={`M ${item.x - s} ${item.y - s * .65} Q ${item.x - s} ${item.y - s * .9} ${item.x - s * .7} ${item.y - s * .9} H ${item.x + s * .7} Q ${item.x + s} ${item.y - s * .9} ${item.x + s} ${item.y - s * .6} V ${item.y + s * .4} Q ${item.x + s} ${item.y + s * .65} ${item.x + s * .7} ${item.y + s * .65} H ${item.x + s * .05} L ${item.x - s * .5} ${item.y + s} L ${item.x - s * .28} ${item.y + s * .65} H ${item.x - s * .7} Q ${item.x - s} ${item.y + s * .65} ${item.x - s} ${item.y + s * .4} Z`} />;
 }
 
 export default function DrawingStudio({
@@ -176,7 +211,7 @@ export default function DrawingStudio({
   const previousPoint = useRef<{ x: number; y: number } | null>(null);
   const dragShape = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
   const completed = useRef(false);
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(DEFAULT_PAINT);
   const [size, setSize] = useState(age === 0 ? 18 : 10);
   const [brush, setBrush] = useState<BrushKind>("marker");
   const [stampShape, setStampShape] = useState<StampShape | null>(null);
@@ -316,12 +351,7 @@ export default function DrawingStudio({
     ctx.globalCompositeOperation = brush === "eraser" ? "destination-out" : "source-over";
     ctx.globalAlpha = brush === "watercolor" ? 0.22 : brush === "chalk" ? 0.65 : 1;
     ctx.lineWidth = brush === "pencil" ? Math.max(2, size * 0.35) : brush === "watercolor" ? size * 1.9 : size;
-    ctx.strokeStyle = color;
-    if (brush === "rainbow" && typeof ctx.createLinearGradient === "function") {
-      const gradient = ctx.createLinearGradient(from.x, from.y, to.x + 1, to.y + 1);
-      ["#ff604f", "#ffd65a", "#24bca4", "#55aaf5", "#7857d6"].forEach((item, index) => gradient.addColorStop(index / 4, item));
-      ctx.strokeStyle = gradient;
-    }
+    ctx.strokeStyle = canvasPaint(ctx, brush === "rainbow" ? "rainbow" : color, from.x, from.y, to.x + Math.max(1, size), to.y + Math.max(1, size));
     if (brush === "chalk") ctx.setLineDash([Math.max(2, size * .32), Math.max(1, size * .12)]);
 
     const stroke = (offsetX = 0, offsetY = 0) => {
@@ -330,8 +360,23 @@ export default function DrawingStudio({
     if (brush === "crayon") {
       ctx.globalAlpha = .52;
       stroke(); stroke(size * .12, -size * .08); stroke(-size * .1, size * .1);
+    } else if (brush === "spray") {
+      ctx.globalAlpha = .42;
+      const base = getArtPaint(color).colors[0];
+      ctx.fillStyle = base;
+      for (let dot = 0; dot < 9; dot += 1) {
+        const angle = dot * 2.399;
+        const distance = (dot % 4 + 1) * size * .18;
+        ctx.fillRect(to.x + Math.cos(angle) * distance, to.y + Math.sin(angle) * distance, Math.max(1.5, size * .12), Math.max(1.5, size * .12));
+      }
     } else if (brush === "sparkle") {
       drawStamp(ctx, { id: "brush-star", shape: "star", x: to.x, y: to.y, size: Math.max(5, size * .7), color, rotation: 0 });
+    } else if (brush === "pattern") {
+      drawStamp(ctx, { id: "brush-flower", shape: "circle", x: to.x, y: to.y, size: Math.max(3, size * .28), color, rotation: 0 });
+      for (let petal = 0; petal < 5; petal += 1) {
+        const angle = petal * Math.PI * 2 / 5;
+        drawStamp(ctx, { id: `petal-${petal}`, shape: "oval", x: to.x + Math.cos(angle) * size * .55, y: to.y + Math.sin(angle) * size * .55, size: Math.max(3, size * .25), color, rotation: petal * 72 });
+      }
     } else {
       stroke();
     }
@@ -486,8 +531,8 @@ export default function DrawingStudio({
           ))}
         </div>
         <div className="art-options-row">
-          <div className="color-tools" aria-label="Paint colors">
-            {COLORS.map((swatch) => <button key={swatch} aria-label={`Choose ${swatch}`} className={`swatch ${color === swatch ? "active" : ""}`} style={{ background: swatch }} onClick={() => setColor(swatch)} />)}
+          <div className="color-tools expanded-palette" aria-label="Paint colors and gradients">
+            {ART_PAINTS.map((paint) => <button key={paint.id} aria-label={`Choose ${paint.label}`} title={paint.label} className={`swatch ${paint.colors.length > 1 ? "gradient-swatch" : ""} ${color === paint.id ? "active" : ""}`} style={{ background: paintCss(paint.id) }} onClick={() => setColor(paint.id)} />)}
           </div>
           <div className="stroke-size-studio">
             <span>Stroke size</span>
@@ -561,12 +606,19 @@ export default function DrawingStudio({
           onPointerUp={() => { if (dragShape.current) capture(shapes); dragShape.current = null; }}
           onPointerCancel={() => { dragShape.current = null; }}
         >
+          <defs>
+            {shapes.filter((item) => getArtPaint(item.color).colors.length > 1).map((item) => (
+              <linearGradient key={item.id} id={`shape-paint-${safeSvgId(item.id)}`} x1="0" y1="0" x2="1" y2="1">
+                {getArtPaint(item.color).colors.map((stopColor, index, colors) => <stop key={stopColor} offset={`${index / (colors.length - 1) * 100}%`} stopColor={stopColor} />)}
+              </linearGradient>
+            ))}
+          </defs>
           {shapes.map((item) => (
             <g
               key={item.id}
               className={item.id === selectedShapeId ? "selected" : ""}
-              fill={item.color}
-              stroke={item.color === "#ffffff" ? "#9aabba" : item.color}
+              fill={getArtPaint(item.color).colors.length > 1 ? `url(#shape-paint-${safeSvgId(item.id)})` : getArtPaint(item.color).colors[0]}
+              stroke={getArtPaint(item.color).colors[0] === "#ffffff" ? "#9aabba" : getArtPaint(item.color).colors[0]}
               strokeWidth="2"
               transform={`rotate(${item.rotation} ${item.x} ${item.y})`}
               role="button"
