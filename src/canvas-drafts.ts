@@ -19,6 +19,11 @@ export type CanvasDraft = {
   /** Editable shapes, serialised. */
   shapes: unknown[];
   background: string;
+  /** Region paint ids used by a coloring page. */
+  coloring?: {
+    fills: Record<number, string>;
+    selectedPaint: string;
+  };
   updatedAt: string;
 };
 
@@ -35,6 +40,7 @@ const VERSION = 2;
 let databasePromise: Promise<IDBDatabase> | null = null;
 const latestSave = new Map<string, CanvasDraft>();
 const activeSave = new Map<string, Promise<void>>();
+let lastUpdatedMs = 0;
 
 export function draftKey(profileId: string, activity: string, ageWorld: number, page: number) {
   return `${profileId}:${activity}:${ageWorld}:${page}`;
@@ -78,13 +84,53 @@ function fallbackMap(): Record<string, CanvasDraft> {
   }
 }
 
+function profileIdFromDraft(id: string) {
+  return id.split(":")[0] || id;
+}
+
+/**
+ * The studio is a workbench, not a second gallery. Keep only the child's four
+ * most recently edited canvases here. A picture deliberately saved to the
+ * family gallery is stored separately and is never removed by this cleanup.
+ */
+async function pruneDatabaseDrafts(database: IDBDatabase, profileId: string, keep = 4) {
+  const drafts = await new Promise<CanvasDraft[]>((resolve, reject) => {
+    const transaction = database.transaction(STORE, "readonly");
+    const request = transaction.objectStore(STORE).getAll();
+    request.onsuccess = () => resolve((request.result as CanvasDraft[]) || []);
+    request.onerror = () => reject(request.error);
+  });
+  const oldIds = drafts
+    .filter((draft) => profileIdFromDraft(draft.id) === profileId)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(keep)
+    .map((draft) => draft.id);
+  if (!oldIds.length) return;
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(STORE, "readwrite");
+    const store = transaction.objectStore(STORE);
+    oldIds.forEach((id) => store.delete(id));
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+function pruneFallbackDrafts(map: Record<string, CanvasDraft>, profileId: string, keep = 4) {
+  Object.values(map)
+    .filter((draft) => profileIdFromDraft(draft.id) === profileId)
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(keep)
+    .forEach((draft) => delete map[draft.id]);
+}
+
 /**
  * Saving a draft must never interrupt drawing, so every failure here is
  * swallowed: a lost autosave is a far smaller problem than a thrown error
  * mid-stroke.
  */
 export async function saveDraft(draft: Omit<CanvasDraft, "updatedAt">): Promise<void> {
-  const record: CanvasDraft = { ...draft, updatedAt: new Date().toISOString() };
+  lastUpdatedMs = Math.max(Date.now(), lastUpdatedMs + 1);
+  const record: CanvasDraft = { ...draft, updatedAt: new Date(lastUpdatedMs).toISOString() };
   latestSave.set(record.id, record);
   const existing = activeSave.get(record.id);
   if (existing) return existing;
@@ -99,6 +145,7 @@ export async function saveDraft(draft: Omit<CanvasDraft, "updatedAt">): Promise<
         if (typeof window.indexedDB === "undefined") {
           const map = fallbackMap();
           map[saved.id] = saved;
+          pruneFallbackDrafts(map, profileIdFromDraft(saved.id));
           window.localStorage.setItem(FALLBACK_KEY, JSON.stringify(map));
         } else {
           const database = await openDatabase();
@@ -108,7 +155,9 @@ export async function saveDraft(draft: Omit<CanvasDraft, "updatedAt">): Promise<
             transaction.oncomplete = () => resolve();
             transaction.onerror = () => reject(transaction.error);
           });
+          await pruneDatabaseDrafts(database, profileIdFromDraft(saved.id));
         }
+        window.dispatchEvent(new CustomEvent("colorquest:draft-saved", { detail: { profileId: profileIdFromDraft(saved.id) } }));
       } catch {
         /* storage unavailable or full — drawing continues normally */
       }
@@ -118,6 +167,29 @@ export async function saveDraft(draft: Omit<CanvasDraft, "updatedAt">): Promise<
 
   activeSave.set(record.id, operation);
   return operation;
+}
+
+export async function loadRecentDrafts(profileId: string, limit = 4): Promise<CanvasDraft[]> {
+  try {
+    if (typeof window === "undefined") return [];
+    const drafts = typeof window.indexedDB === "undefined"
+      ? Object.values(fallbackMap())
+      : await (async () => {
+          const database = await openDatabase();
+          return new Promise<CanvasDraft[]>((resolve, reject) => {
+            const transaction = database.transaction(STORE, "readonly");
+            const request = transaction.objectStore(STORE).getAll();
+            request.onsuccess = () => resolve((request.result as CanvasDraft[]) || []);
+            request.onerror = () => reject(request.error);
+          });
+        })();
+    return drafts
+      .filter((draft) => profileIdFromDraft(draft.id) === profileId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
 }
 
 export async function loadDraft(id: string): Promise<CanvasDraft | null> {

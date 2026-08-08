@@ -69,6 +69,7 @@ beforeEach(() => {
     progress: { "profile-test": emptyProgress() },
   };
   window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(family));
+  window.localStorage.removeItem("colorquest-draft-fallback");
   Object.values(canvasContext).forEach((value) => {
     if (typeof value === "function" && "mockClear" in value) value.mockClear();
   });
@@ -105,7 +106,7 @@ describe("ColorQuest core journeys", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Start creating" })[0]);
 
-    expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
     expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
   });
 
@@ -124,7 +125,7 @@ describe("ColorQuest core journeys", () => {
     expect(squareCanvas.height).toBe(originalHeight);
     expect(screen.getByRole("button", { name: "Select square" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "＋ Bigger" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Add triangle shapes" }));
     const triangleCanvas = screen.getByLabelText("Canvas ready to add triangle shapes") as HTMLCanvasElement;
@@ -132,7 +133,7 @@ describe("ColorQuest core journeys", () => {
 
     expect(screen.getByRole("button", { name: "Select triangle" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "↻ Rotate" }));
-    expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
   });
 
   it("supports expressive brushes and base paint without replacing the drawing layer", async () => {
@@ -152,7 +153,7 @@ describe("ColorQuest core journeys", () => {
     expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
   });
 
-  it("uses Fifi instead of a browser alert before leaving a drawing", async () => {
+  it("silently autosaves and leaves a drawing without any confirmation popup", async () => {
     const user = userEvent.setup();
     const browserConfirm = vi.spyOn(window, "confirm");
     render(<ColorQuestApp />);
@@ -165,10 +166,25 @@ describe("ColorQuest core journeys", () => {
     await user.click(screen.getByRole("button", { name: "Grown-ups" }));
 
     expect(browserConfirm).not.toHaveBeenCalled();
-    expect(screen.getByRole("dialog", { name: "Your picture is safe, Maya!" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Stay & draw" }));
-    expect(screen.getByRole("heading", { name: "Draw adventure" })).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Quick check" })).toBeTruthy();
     browserConfirm.mockRestore();
+  });
+
+  it("shows and reopens one of the four silently saved recent canvases", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await user.click(screen.getAllByRole("button", { name: "Start creating" })[0]);
+    const canvas = screen.getByLabelText("Free drawing canvas");
+    fireEvent.pointerDown(canvas, { clientX: 45, clientY: 65, pointerId: 9 });
+    fireEvent.pointerMove(canvas, { clientX: 105, clientY: 125, pointerId: 9 });
+    fireEvent.pointerUp(canvas, { clientX: 105, clientY: 125, pointerId: 9 });
+
+    const recent = await screen.findByRole("navigation", { name: "Four most recent creative canvases" });
+    expect(recent).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Next canvas" }));
+    await user.click(screen.getByRole("button", { name: /Draw canvas 1/ }));
+    expect((screen.getByRole("spinbutton") as HTMLInputElement).value).toBe("1");
   });
 
   it("saves privately, then lets a parent use Android's native save/share sheet", async () => {
@@ -194,13 +210,14 @@ describe("ColorQuest core journeys", () => {
   it("colors a drawing and keeps the coloring activity usable", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
-    await user.click(screen.getByRole("button", { name: /Color10 scenes to fill with color/ }));
+    await user.click(screen.getByRole("button", { name: /Color27 scenes to fill with color/ }));
 
+    await user.click(screen.getByRole("button", { name: "Choose Sunshine" }));
     const firstPart = screen.getByRole("button", { name: "Color part 1" });
     await user.click(firstPart);
 
-    expect(firstPart.getAttribute("style")).toContain("rgb(255, 214, 90)");
-    expect(screen.getByRole("heading", { name: "Color adventure" })).toBeTruthy();
+    expect(firstPart.querySelector("circle, ellipse, path, rect")?.getAttribute("fill")).toBe("#ffd65a");
+    expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
   });
 });
 
@@ -298,7 +315,7 @@ describe("Child-friendly activity organization", () => {
   it("places every visible activity in one clear path for each age world", () => {
     for (const age of [0, 1, 2, 3]) {
       const groups = activityGroupsForAge(age);
-      expect(groups.map((group) => group.title)).toEqual(["Create", "Play & Read", "Learn & Discover"]);
+      expect(groups.map((group) => group.title)).toEqual(["Creative Studio", "Play & Read", "Learn & Discover"]);
       const activities = groups.flatMap((group) => group.activities);
       expect(new Set(activities).size).toBe(activities.length);
       expect(activities.every((activity) => isActivityAvailable(activity, age))).toBe(true);
@@ -324,7 +341,7 @@ describe("Child-friendly activity organization", () => {
 
   it("shows the three activity paths on Home", () => {
     render(<ColorQuestApp />);
-    expect(screen.getByRole("heading", { name: "Create" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Play & Read" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Learn & Discover" })).toBeTruthy();
   });

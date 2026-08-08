@@ -48,7 +48,7 @@ ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1
 
 ## Version 2.2 — the quality and guidance update
 
-- Fifi, an original ColorQuest “Color Spark,” replaces the browser-origin drawing alert with friendly, accessible autosave and start-over guidance
+- Fifi, an original ColorQuest “Color Spark,” offers friendly, optional creative tips and start-over guidance without interrupting page navigation
 - Every drawing exit—including the header, profile switcher, Parent Corner, age/activity controls, arrows, and page picker—uses the same safe Fifi flow
 - Puzzle pages now use the same deduplicated deck as the on-screen counter: 50 unique puzzles for ages 1–3, 56 for ages 4–6, 104 for ages 7–9, and 81 for ages 10–12
 - Regression coverage verifies that every advertised puzzle page is reachable exactly once before the deck repeats
@@ -56,7 +56,7 @@ ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1
 - Read-aloud uses voices supplied by the device or browser; voice availability, accent, offline capability, and sound quality vary by device
 - On phones, the drawing canvas comes first and a sticky Brushes / Base paint / Shapes dock keeps creative tools within thumb reach
 - Discovery Lab illustrations are generated locally from ColorQuest's bundled scene system—there are no live image searches or third-party image requests
-- Drawing drafts restore privately for the same child, age world, activity, and page after an accidental exit
+- The four most recently edited Draw or Color canvases restore privately and silently for each child
 - Parent Corner uses a randomized multiplication check instead of a fixed answer
 - The installable web app forces fresh fixed-name assets into each versioned offline cache and does not build an unbounded runtime cache
 - Public and Android production builds omit JavaScript source maps; Android release builds enable code minification and resource shrinking
@@ -80,11 +80,21 @@ ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1
 - Multiple private child profiles with nickname, age, avatar, and age-based starting world
 - Separate completion history and resume position for every profile and activity
 - Children can repeat, skip, or revisit content without streaks or locked lessons
-- Redesigned Drawing Studio with eight brush styles, six base paints, and eight editable shapes
+- Redesigned Drawing Studio foundation, now expanded in 2.6 to ten brush styles, ten base paints, and 12 editable shapes
 - Shapes can be moved, resized, rotated, copied, recolored, and removed independently from brush strokes
 - On-device artwork gallery protected by Parent Corner
 - Parent-controlled high-resolution PNG download, Android share sheet, printing, and deletion
 - Existing v1.1 progress is carried into the first profile created after upgrading
+
+## Version 2.6 — Fifi's Creative Studio
+
+- Draw and Color share one clearly organized Creative Studio with a quick mode switch
+- 27 distinct offline SVG coloring scenes replace the old ten-picture loop
+- Recognizable animals, tulip gardens, nature, landscapes, fantasy, vehicles, and space scenes
+- 18 solid colors plus eight gradients in both drawing and coloring
+- Ten brush styles, ten base-paint backgrounds, and 12 movable/editable shapes
+- Only the four most recent works-in-progress are autosaved; permanent gallery saving is always an explicit choice
+- Children can leave any creative page immediately without a warning or save popup
 
 ## Learning introduced in version 1.1
 
