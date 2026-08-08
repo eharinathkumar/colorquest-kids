@@ -119,34 +119,21 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .screen-break span { font-size: 24px; }
 .screen-break p { margin: 0; color: #4b684e; font: 650 12px/1.45 system-ui, sans-serif; }
 .studio-content { min-width: 0; padding: 28px clamp(20px, 4vw, 60px) 50px; }
-.studio-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 20px; }
+.studio-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 20px; }
 .studio-heading p { margin: 0 0 5px; color: #5c7186; font: 750 13px/1.3 system-ui, sans-serif; }
 .studio-heading h2 { margin: 0; font-size: clamp(30px, 4vw, 48px); letter-spacing: -.03em; }
-.studio-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-.page-picker { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px; border-radius: 17px; background: white; border: 1px solid #e5dccf; }
+.page-picker { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 17px; background: white; border: 1px solid #e5dccf; }
 .page-picker button { width: 42px; height: 42px; border: 0; border-radius: 12px; background: #edf6ff; color: var(--navy); font-size: 22px; cursor: pointer; }
 .page-picker button:disabled, .primary-button:disabled { cursor: default; opacity: .45; transform: none; box-shadow: none; }
 .page-picker label { color: #536b85; font: 750 13px/1 system-ui, sans-serif; }
 .page-picker input { width: 54px; height: 38px; border: 1px solid #cad6e2; border-radius: 9px; text-align: center; color: var(--navy); }
-.page-picker .page-count { color: var(--navy); font: 800 15px/1 system-ui, sans-serif; padding: 0 6px; white-space: nowrap; }
-/* Opt-in "Ask Fifi" tip button for the older worlds (ages 7-12), where the tip
-   no longer auto-opens. A dot marks a tip the child hasn't seen yet. */
-.ask-fifi-button { flex: 0 0 auto; position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 14px 6px 8px; border: 2px solid #dce7f3; border-radius: 999px; background: #f6faff; color: var(--navy); font-weight: 800; font-size: 14px; cursor: pointer; white-space: nowrap; }
-.ask-fifi-button:hover { background: #ecf4ff; }
-.ask-fifi-button img { width: 30px; height: 30px; object-fit: contain; }
-.ask-fifi-button.has-new::after { content: ""; position: absolute; top: 4px; right: 8px; width: 11px; height: 11px; border-radius: 50%; background: var(--coral); border: 2px solid #fff; }
 .completion-marker { padding: 8px 10px; border-radius: 10px; background: #f2f4f6; color: #768696; white-space: nowrap; font: 800 9px/1 system-ui, sans-serif; }
 .completion-marker.done { background: #dff8ed; color: #126d54; }
 .creative-board { position: relative; padding: 16px; border: 1px solid #e6dccf; border-radius: 28px; background: white; box-shadow: 0 16px 35px #173b6d13; }
 .tool-row { min-height: 64px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .color-tools { display: flex; gap: 8px; flex-wrap: wrap; }
-.swatch { width: 40px; height: 40px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #bdc9d4, 0 3px 7px #0002; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.swatch { width: 40px; height: 40px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #bdc9d4, 0 3px 7px #0002; cursor: pointer; }
 .swatch.active { box-shadow: 0 0 0 4px var(--navy), 0 4px 9px #0002; transform: scale(.88); }
-/* Non-color selection cue: a checkmark appears on the chosen swatch, so which
-   color is selected is never signalled by color/ring alone. White outline keeps
-   it legible on both light (white/yellow) and dark (navy) swatches. */
-.swatch-check { font-size: 20px; font-weight: 900; line-height: 1; color: var(--navy); opacity: 0; -webkit-text-stroke: 2px #fff; paint-order: stroke fill; }
-.swatch.active .swatch-check { opacity: 1; }
 .size-control { margin-left: 6px; color: #536b85; font: 750 13px/1 system-ui, sans-serif; display: flex; align-items: center; gap: 7px; }
 .tool-button, .save-button { min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid #cdd8e2; background: #f7fafc; color: var(--navy); font-weight: 800; cursor: pointer; }
 .save-button { margin-left: auto; border: 0; background: var(--teal); color: white; }
@@ -173,24 +160,6 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .story-spark span { white-space: nowrap; color: #6045b3; font: 850 12px/1.4 system-ui, sans-serif; }
 .story-spark p { margin: 0; color: #4d426a; font: 650 13px/1.45 system-ui, sans-serif; }
 .success-toast { margin: 14px auto 0; width: fit-content; padding: 13px 18px; border-radius: 15px; background: #dff8ed; color: #126d54; font-weight: 900; }
-/* Full character celebration for the younger worlds (ages 1-6). */
-.success-celebrate { position: relative; margin: 16px auto 0; width: fit-content; display: flex; align-items: center; gap: 12px; padding: 12px 22px 12px 14px; border-radius: 22px; background: #dff8ed; color: #126d54; font-weight: 900; animation: success-pop 300ms cubic-bezier(.2,.9,.3,1.3); }
-.success-celebrate img { width: 56px; height: 56px; object-fit: contain; animation: success-bob 1.4s ease-in-out infinite; }
-.success-celebrate p { margin: 0; font-size: 18px; }
-.success-sparkles { position: absolute; inset: -8px 0 auto 8px; pointer-events: none; }
-.success-sparkles i { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--yellow, #ffd65a); opacity: 0; animation: success-sparkle 900ms ease-out forwards; }
-.success-sparkles i:nth-child(1) { left: 6px; animation-delay: 0ms; }
-.success-sparkles i:nth-child(2) { left: 34px; background: var(--coral, #ff604f); animation-delay: 90ms; }
-.success-sparkles i:nth-child(3) { left: 60px; background: var(--teal, #24bca4); animation-delay: 170ms; }
-.success-sparkles i:nth-child(4) { left: 20px; animation-delay: 250ms; }
-.success-sparkles i:nth-child(5) { left: 48px; background: var(--sky, #55aaf5); animation-delay: 330ms; }
-@keyframes success-pop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes success-bob { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
-@keyframes success-sparkle { 0% { transform: translateY(6px) scale(.4); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateY(-16px) scale(1); opacity: 0; } }
-/* "Surprise me" jumps to an item the child hasn't finished — turning a long
-   catalog into something to explore rather than page through in order. */
-.surprise-button { flex: 0 0 auto; min-height: 44px; padding: 6px 14px; border: 2px solid #e7dcf6; border-radius: 999px; background: #f7f2ff; color: var(--grape, #7857d6); font-weight: 800; font-size: 14px; cursor: pointer; white-space: nowrap; }
-.surprise-button:hover { background: #efe6ff; }
 .puzzle-board { min-height: 610px; }
 .puzzle-help { padding: 15px 20px; border-radius: 18px; background: #fff6da; display: flex; gap: 13px; align-items: center; }
 .puzzle-help > span { font-size: 35px; }
@@ -263,11 +232,24 @@ footer > button { border: 0; background: none; color: var(--navy); text-decorati
 .move-card p { margin-top: 10px; }
 .question-card { min-height: 420px; }
 .question-card h4 { margin: 15px 0 20px; white-space: pre-line; font-size: clamp(23px, 3vw, 34px); line-height: 1.25; }
+.adaptive-math-status { margin: -8px -8px 20px; padding: 14px 15px; border: 1px solid #d6c8f2; border-radius: 17px; background: linear-gradient(135deg, #f4efff, #fff8df); }
+.adaptive-math-status > div:first-child { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.adaptive-math-status span { color: #6947a3; font: 900 10px/1.2 system-ui, sans-serif; letter-spacing: .08em; }
+.adaptive-math-status strong { color: #385b55; font: 900 12px/1.2 system-ui, sans-serif; }
+.adaptive-math-status small { margin-top: 9px; display: block; color: #647389; font: 750 11px/1.35 system-ui, sans-serif; }
+.math-quest-dots { margin-top: 11px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.math-quest-dots i { height: 8px; border-radius: 999px; background: #d9dfe6; }
+.math-quest-dots i.current { background: #f0bd34; box-shadow: 0 0 0 2px #fff4c9; }
+.math-quest-dots i.done { background: #1b9a7f; }
 .answer-grid { display: grid; gap: 10px; }
 .answer-grid button { min-height: 62px; padding: 10px 16px; border: 2px solid #cedbe5; border-radius: 16px; background: #f9fbfd; color: var(--navy); text-align: left; font-weight: 850; cursor: pointer; }
 .answer-grid button:hover { border-color: var(--sky); transform: translateX(3px); }
 .answer-grid button.chosen.correct { border-color: var(--teal); background: #e3f9f2; }
 .answer-grid button.chosen.incorrect { border-color: var(--coral); background: #fff0ed; }
+.answer-grid button:disabled { cursor: default; opacity: .72; transform: none; }
+.answer-grid button.chosen.correct:disabled { opacity: 1; }
+.math-support-note { margin-top: 9px; padding: 9px 11px; border-radius: 11px; background: #fff8df; color: #6f5a18; display: block; font: 750 11px/1.45 system-ui, sans-serif; }
+.answer-explanation .next-math-question { width: 100%; min-height: 50px; margin-top: 12px; border: 0; border-radius: 13px; background: #6847a4; color: white; font-weight: 900; cursor: pointer; }
 .answer-explanation { margin-top: 15px; padding: 14px; border-radius: 14px; }
 .answer-explanation.correct { background: #e3f9f2; color: #176651; }
 .answer-explanation.try-again { background: #fff3df; color: #825b22; }

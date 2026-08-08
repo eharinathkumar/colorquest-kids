@@ -1,11 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getLearningLesson, getLearningLessons, type Subject } from "./learning-data";
 import { getCuratedResource, getLessonGuide, INTERESTS } from "./mentor-data";
-import type { InterestKey } from "./profile-data";
+import type { InterestKey, MathPracticeOutcome, MathPracticeState } from "./profile-data";
 import { GrownUpGate } from "./GrownUpGate";
 import { SpeakButton, useAutoSpeak, useSpeech } from "./SpeechProvider";
+import {
+  evaluateMathReadiness,
+  generateAdaptiveMathQuestion,
+  mathMasteryLabel,
+  type MathRepresentation,
+} from "./adaptive-math";
 
 const AGE_LABELS = ["Ages 1–3", "Ages 4–6", "Ages 7–9", "Ages 10–12"];
+
+function newMathSessionId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `math-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 /**
  * Reading time for a slide when the story is playing silently.
@@ -101,7 +112,7 @@ function LearnMoreGate({ subject, interest }: { subject: Subject; interest: Inte
             compact
             title="Grown-up link"
             intro={`This opens ${resource.provider} in a browser, outside ColorQuest.`}
-            confirmLabel="Open the link"
+            confirmLabel="Approve this link"
             cancelLabel="Not now"
             onPass={() => { setApproved(true); setGate(false); }}
             onCancel={() => setGate(false)}
@@ -116,40 +127,113 @@ function LearnMoreGate({ subject, interest }: { subject: Subject; interest: Inte
 export default function LearningBoard({
   subject,
   age,
+  childAge,
+  profileId,
   page,
   liked,
+  mathPractice,
+  mathJourney,
   onComplete,
   onAttempt,
+  onMathAnswer,
   onLike,
   onSelectLesson,
 }: {
   subject: Subject;
   age: number;
+  childAge: number;
+  profileId: string;
   page: number;
   liked: boolean;
+  mathPractice?: MathPracticeState;
+  mathJourney: MathPracticeOutcome[];
   onComplete: () => void;
   onAttempt: () => void;
+  onMathAnswer: (result: {
+    lessonId: string;
+    questionId: string;
+    correct: boolean;
+    representation: MathRepresentation;
+    sessionId: string;
+  }) => void;
   onLike: (lessonId: string, interest: InterestKey) => void;
   onSelectLesson: (page: number) => void;
 }) {
   const lesson = getLearningLesson(subject, age, page);
   const lessons = getLearningLessons(subject, age);
   const guide = getLessonGuide(lesson, subject, age);
+  const adaptiveMath = subject === "math";
+  const scoredAdaptiveMath = adaptiveMath && childAge >= 3;
+  const mathSessionId = useRef(newMathSessionId());
+  const [mathRound, setMathRound] = useState(0);
+  const [seenHere, setSeenHere] = useState<string[]>([]);
+  const [mathQuestion, setMathQuestion] = useState(() => adaptiveMath
+    ? generateAdaptiveMathQuestion({ profileId, childAge, lesson, state: mathPractice, sessionSeed: mathSessionId.current })
+    : null);
+  const [questSolved, setQuestSolved] = useState(0);
+  const [questionSolved, setQuestionSolved] = useState(false);
   const [choice, setChoice] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [unpacked, setUnpacked] = useState(false);
-  const correct = choice === lesson.answer;
+  const prompt = mathQuestion?.prompt || lesson.question;
+  const choices: readonly string[] = mathQuestion && childAge <= 3
+    ? mathQuestion.choices.filter((option) => option === mathQuestion.answer || option === mathQuestion.choices.find((item) => item !== mathQuestion.answer))
+    : mathQuestion?.choices || lesson.choices;
+  const expectedAnswer = mathQuestion?.answer || lesson.answer;
+  const correct = choice === expectedAnswer;
+  const readiness = evaluateMathReadiness(mathJourney);
 
   // Children who cannot read hear the lesson's big idea and question as it opens.
-  useAutoSpeak([lesson.title, lesson.bigIdea, lesson.question], `${subject}-${age}-${page}`);
+  useAutoSpeak(
+    [lesson.title, lesson.bigIdea, mathQuestion?.speakText || lesson.question],
+    `${subject}-${age}-${page}-${mathQuestion?.id || "guided"}`,
+  );
 
   const answer = (nextChoice: string) => {
+    if (questionSolved) return;
     setChoice(nextChoice);
-    onAttempt();
-    if (nextChoice === lesson.answer && !completed) {
-      setCompleted(true);
-      onComplete();
+    if (scoredAdaptiveMath && mathQuestion) {
+      onMathAnswer({
+        lessonId: lesson.id,
+        questionId: mathQuestion.id,
+        correct: nextChoice === mathQuestion.answer,
+        representation: mathQuestion.representation,
+        sessionId: mathSessionId.current,
+      });
+    } else {
+      onAttempt();
     }
+    if (nextChoice === expectedAnswer) {
+      setQuestionSolved(true);
+      if (adaptiveMath) setQuestSolved((value) => Math.min(5, value + 1));
+      if (!completed) {
+        setCompleted(true);
+        onComplete();
+      }
+    }
+  };
+
+  const nextMathQuestion = () => {
+    if (!mathQuestion) return;
+    const finishedQuest = questSolved >= 5;
+    if (finishedQuest) {
+      mathSessionId.current = newMathSessionId();
+      setQuestSolved(0);
+    }
+    const nextRound = mathRound + 1;
+    const recentQuestionIds = [mathQuestion.id, ...seenHere, ...(mathPractice?.recentQuestionIds || [])];
+    const next = generateAdaptiveMathQuestion({
+      profileId,
+      childAge,
+      lesson,
+      state: { ...mathPractice, recentQuestionIds },
+      sessionSeed: `${mathSessionId.current}:${nextRound}`,
+    });
+    setSeenHere((current) => [mathQuestion.id, ...current].slice(0, 12));
+    setMathRound(nextRound);
+    setMathQuestion(next);
+    setChoice(null);
+    setQuestionSolved(false);
   };
 
   return (
@@ -195,39 +279,59 @@ export default function LearningBoard({
 
         <section className="practice-column">
           <article className="question-card">
-            <span>YOUR TURN</span>
+            {adaptiveMath && mathQuestion && (
+              <div className="adaptive-math-status" aria-label={`Math practice: ${mathMasteryLabel(mathPractice)}`}>
+                <div><span>FIFI'S FRESH MATH QUEST</span><strong>{childAge <= 2 ? "Play & notice" : mathMasteryLabel(mathPractice)}</strong></div>
+                <div className="math-quest-dots" aria-label={`${questSolved} of 5 questions solved in this quest`}>
+                  {[0, 1, 2, 3, 4].map((index) => <i key={index} className={index < questSolved ? "done" : index === questSolved ? "current" : ""} />)}
+                </div>
+                <small>Level {mathQuestion.level} · New numbers and pictures each time</small>
+              </div>
+            )}
+            <span>{adaptiveMath ? "YOUR FRESH CHALLENGE" : "YOUR TURN"}</span>
             <div className="question-head">
-              <h4>{lesson.question}</h4>
+              <h4>{prompt}</h4>
               <SpeakButton
-                id={`question-${lesson.id}`}
+                id={`question-${mathQuestion?.id || lesson.id}`}
                 label="Hear question"
-                text={[lesson.question, `Your choices are: ${lesson.choices.join(", ")}`]}
+                text={[
+                  mathQuestion?.speakText || lesson.question,
+                  `Your choices are: ${mathQuestion ? choices.map((option) => mathQuestion.choiceLabels[mathQuestion.choices.indexOf(option)]).join(", ") : lesson.choices.join(", ")}`,
+                ]}
               />
             </div>
             <div className="answer-grid">
-              {lesson.choices.map((option) => {
+              {choices.map((option) => {
                 const isChosen = choice === option;
-                const className = isChosen ? (option === lesson.answer ? "chosen correct" : "chosen incorrect") : "";
-                return <button key={option} className={className} onClick={() => answer(option)} aria-pressed={isChosen}>{option}</button>;
+                const className = isChosen ? (option === expectedAnswer ? "chosen correct" : "chosen incorrect") : "";
+                return <button key={option} className={className} onClick={() => answer(option)} aria-pressed={isChosen} disabled={questionSolved} aria-label={mathQuestion ? mathQuestion.choiceLabels[mathQuestion.choices.indexOf(option)] : undefined}>{option}</button>;
               })}
             </div>
             {choice && (
               <div className={`answer-explanation ${correct ? "correct" : "try-again"}`} role="status">
-                <strong>{correct ? "Yes—your reasoning works!" : "Good try. Let’s use a clue."}</strong>
-                <p>{correct ? lesson.why : guide.hint}</p>
+                <strong>{correct ? (childAge <= 2 ? "You found it!" : "Yes—your reasoning works!") : (childAge <= 2 ? "Let’s look together." : "Good try. Let’s use a clue.")}</strong>
+                <p>{correct ? (mathQuestion?.why || lesson.why) : (mathQuestion?.hint || guide.hint)}</p>
+                {!correct && scoredAdaptiveMath && (mathPractice?.supportLevel || 0) >= 2 && (
+                  <small className="math-support-note">Fifi made the clue more concrete. Take your time—this level will stay gentle until it feels comfortable.</small>
+                )}
                 <SpeakButton
-                  id={`feedback-${lesson.id}-${correct ? "yes" : "no"}`}
+                  id={`feedback-${mathQuestion?.id || lesson.id}-${correct ? "yes" : "no"}`}
                   label="Hear this"
-                  text={[correct ? "Yes, your reasoning works." : "Good try. Let's use a clue.", correct ? lesson.why : guide.hint]}
+                  text={[correct ? (childAge <= 2 ? "You found it!" : "Yes, your reasoning works.") : (childAge <= 2 ? "Let's look together." : "Good try. Let's use a clue."), correct ? (mathQuestion?.why || lesson.why) : (mathQuestion?.hint || guide.hint)]}
                 />
                 {!correct && <button onClick={() => setUnpacked(true)}>Show me another explanation</button>}
+                {correct && adaptiveMath && (
+                  <button className="next-math-question" onClick={nextMathQuestion}>
+                    {questSolved >= 5 ? "Start another fresh quest" : "Try another question"} →
+                  </button>
+                )}
               </div>
             )}
           </article>
 
-          {correct && (
+          {correct && (!adaptiveMath || questSolved >= 5) && (
             <article className="mentor-celebration">
-              <span>🌱 MENTOR NOTE</span><p>You learned this at your own pace. Can you explain it in your own words?</p>
+              <span>🌱 MENTOR NOTE</span><p>{adaptiveMath ? (readiness.ready ? "You used several kinds of Math thinking across more than one quest. You’re ready for a new challenge—or you can keep practicing here." : "You finished a five-question quest at your own pace. Can you explain one strategy in your own words?") : "You learned this at your own pace. Can you explain it in your own words?"}</p>
               <button className={liked ? "liked" : ""} disabled={liked} onClick={() => onLike(lesson.id, guide.interest)}>
                 {liked ? "✓ Added to my interests" : `${INTERESTS[guide.interest].icon} I liked this—show me more`}
               </button>

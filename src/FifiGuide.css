@@ -1,14 +1,11 @@
 .fifi-layer,
 .fifi-tip-wrap {
-  /* Fifi is made of the same paint as the rest of the app: these derive from
-     the global palette tokens (:root in styles.css) so there is one source of
-     truth. Fallbacks keep Fifi rendering correctly if the globals are absent. */
-  --fifi-ink: var(--navy, #173b6d);
-  --fifi-purple: var(--grape, #7857d6);
-  --fifi-purple-dark: color-mix(in srgb, var(--grape, #7857d6) 76%, #1a1035);
-  --fifi-mint: color-mix(in srgb, var(--teal, #24bca4) 16%, #ffffff);
-  --fifi-coral: var(--coral, #ff604f);
-  --fifi-cream: var(--cream, #fffaf0);
+  --fifi-ink: #15355b;
+  --fifi-purple: #7356cf;
+  --fifi-purple-dark: #5940b4;
+  --fifi-mint: #dff8ee;
+  --fifi-coral: #e6524b;
+  --fifi-cream: #fffaf0;
   font-family: inherit;
   position: fixed;
   z-index: 1200;

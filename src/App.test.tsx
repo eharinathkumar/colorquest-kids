@@ -372,8 +372,48 @@ describe("Math and science learning trails", () => {
     expect(screen.getByRole("heading", { name: "Math adventure" })).toBeTruthy();
     expect(screen.getByText(lesson.bigIdea)).toBeTruthy();
     expect(screen.getByText("TRY IT AWAY FROM THE SCREEN")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: lesson.answer }));
+    const freshChoices = Array.from(document.querySelectorAll<HTMLButtonElement>(".question-card .answer-grid button"));
+    for (const answerChoice of freshChoices) {
+      if (screen.queryByText("Yes—your reasoning works!")) break;
+      await user.click(answerChoice);
+    }
     expect(screen.getByRole("status").textContent).toContain("Yes—your reasoning works!");
+  });
+
+  it("gives an age-six child a fresh Math question and remembers the result", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await user.click(screen.getByRole("button", { name: /MathBig ideas made visible/ }));
+
+    const firstPrompt = document.querySelector(".question-card h4")?.textContent;
+    expect(firstPrompt).toBeTruthy();
+    expect(screen.getByText("FIFI'S FRESH MATH QUEST")).toBeTruthy();
+
+    for (const answerChoice of Array.from(document.querySelectorAll<HTMLButtonElement>(".question-card .answer-grid button"))) {
+      if (screen.queryByText("Yes—your reasoning works!")) break;
+      await user.click(answerChoice);
+    }
+    await user.click(screen.getByRole("button", { name: /Try another question/ }));
+
+    expect(document.querySelector(".question-card h4")?.textContent).not.toBe(firstPrompt);
+    const saved = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
+    expect(saved.progress["profile-test"].learning.mathPractice["count-to-twenty"].correct).toBe(1);
+  });
+
+  it("keeps age-two Math playful, two-choice, and outside mastery scoring", async () => {
+    const family = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
+    family.profiles[0].age = 2;
+    window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(family));
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+
+    await user.click(screen.getByRole("button", { name: /MathBig ideas made visible/ }));
+    expect(screen.getByText("Play & notice")).toBeTruthy();
+    expect(document.querySelectorAll(".question-card .answer-grid button")).toHaveLength(2);
+    await user.click(document.querySelector<HTMLButtonElement>(".question-card .answer-grid button")!);
+
+    const saved = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
+    expect(saved.progress["profile-test"].learning.mathPractice).toEqual({});
   });
 
   it("adapts science language and topics for ages 10–12", async () => {

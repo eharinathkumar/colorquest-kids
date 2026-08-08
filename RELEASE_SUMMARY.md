@@ -1,10 +1,19 @@
-# ColorQuest Kids 2.4.1 organization release
+# ColorQuest Kids 2.5.0 adaptive Math release
 
 Release date: August 5, 2026  
-Web version: 2.4.1  
-Android version: 2.4.1 (`versionCode` 9)
+Web version: 2.5.0  
+Android version: 2.5.0 (`versionCode` 10)
 
 ## Headline changes
+
+- **Fresh questions, not a fixed quiz:** every Math concept generates changing values, visual groups, stories, and shuffled choices.
+- **Per-child repeat memory:** each profile remembers its recent question signatures and avoids the latest 48; a five-question mini-quest also guards its own active session.
+- **Exact-age starting points:** ages 4, 5, and 6 no longer start with identical ranges, and the same principle extends through age 12.
+- **Evidence before promotion:** challenge rises only after three of the latest four questions were solved on the first try, including the latest two, across at least two representations.
+- **Gentle recovery:** two first-try misses add concrete support; sustained difficulty can lower the working level without deleting earlier achievement.
+- **Meaningful readiness:** “Ready for a new challenge” requires five of six first-try successes across two quests and three representations—not one lucky tap.
+- **Youngest-child care:** ages 1–2 receive two-choice, unscored Play & notice prompts; age 3 begins with two accessible choices.
+- **Transparent parent view:** Parent Corner reports fresh questions tried and independent first-try successes without grades or child comparisons.
 
 - **One child-friendly map:** Home and Studio now use the same Create, Play & Read, and Learn & Discover grouping.
 - **Age-safe exploration:** storybooks appear only in the two younger worlds and Discovery appears only in the two older worlds; invalid saved destinations fall back safely.
@@ -31,11 +40,11 @@ Android version: 2.4.1 (`versionCode` 9)
 
 ## Verified here
 
-- `npm run check`: **65/65 tests passed**, TypeScript passed, production web build passed.
+- `npm run check`: **78/78 tests passed**, TypeScript passed, production web build passed.
 - `npm audit --omit=dev`: **0 vulnerabilities**.
 - `npm run android:sync`: Android-targeted web build passed and copied successfully.
 - No `.map` files in the web or Android asset bundles.
-- Final web and Android bundles contain Fifi's local art, storybook CSS, all 24 story images, and the v2.4.1 offline manifest.
+- Final web and Android bundles contain Fifi's local art, storybook CSS, all 24 story images, and the v2.5.0 offline manifest.
 
 ## Still required on your computer
 

@@ -1,7 +1,6 @@
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { deleteDraft, draftKey, loadDraft, saveDraft } from "./canvas-drafts";
 import { SpeakButton, useAutoSpeak } from "./SpeechProvider";
-import { PAINT_COLORS, colorName } from "./color-names";
 
 type BrushKind = "marker" | "pencil" | "crayon" | "chalk" | "watercolor" | "rainbow" | "sparkle" | "eraser";
 type StampShape = "circle" | "square" | "triangle" | "diamond" | "star" | "heart" | "moon" | "cloud";
@@ -19,7 +18,7 @@ type ShapeItem = {
 type CanvasHistory = { ink: string; shapes: ShapeItem[]; background: string };
 type MobileToolPanel = "brush" | "paint" | "shape";
 
-const COLORS = PAINT_COLORS;
+const COLORS = ["#ff604f", "#ffd65a", "#24bca4", "#55aaf5", "#7857d6", "#f58bbb", "#173b6d", "#ffffff"];
 const BRUSHES: Array<{ id: BrushKind; icon: string; label: string }> = [
   { id: "marker", icon: "🖌️", label: "Paint" },
   { id: "pencil", icon: "✏️", label: "Pencil" },
@@ -177,7 +176,7 @@ export default function DrawingStudio({
   const previousPoint = useRef<{ x: number; y: number } | null>(null);
   const dragShape = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
   const completed = useRef(false);
-  const [color, setColor] = useState<string>(COLORS[0]);
+  const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(age === 0 ? 18 : 10);
   const [brush, setBrush] = useState<BrushKind>("marker");
   const [stampShape, setStampShape] = useState<StampShape | null>(null);
@@ -488,7 +487,7 @@ export default function DrawingStudio({
         </div>
         <div className="art-options-row">
           <div className="color-tools" aria-label="Paint colors">
-            {COLORS.map((swatch) => <button key={swatch} aria-label={`Choose ${colorName(swatch)}`} aria-pressed={color === swatch} title={colorName(swatch)} className={`swatch ${color === swatch ? "active" : ""}`} style={{ background: swatch }} onClick={() => setColor(swatch)}><span className="swatch-check" aria-hidden="true">✓</span></button>)}
+            {COLORS.map((swatch) => <button key={swatch} aria-label={`Choose ${swatch}`} className={`swatch ${color === swatch ? "active" : ""}`} style={{ background: swatch }} onClick={() => setColor(swatch)} />)}
           </div>
           <div className="stroke-size-studio">
             <span>Stroke size</span>

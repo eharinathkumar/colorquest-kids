@@ -26,6 +26,37 @@ export type LearningSignals = {
   lessonAttempts: Record<string, number>;
   likedLessons: string[];
   recentLessons: string[];
+  mathPractice: Record<string, MathPracticeState>;
+  mathJourney: MathPracticeOutcome[];
+};
+
+/**
+ * Small, local-only signals used by the adaptive maths practice engine.
+ * The values deliberately describe learning behaviour, not grades. They stay
+ * with the child's existing on-device profile and never leave the device.
+ */
+export type MathPracticeState = {
+  level: number;
+  sequence: number;
+  attempts: number;
+  correct: number;
+  firstTryStreak: number;
+  struggleStreak: number;
+  currentQuestionId?: string;
+  currentMistakes: number;
+  recentQuestionIds: string[];
+  recentResults: boolean[];
+  consecutiveFirstTryMisses: number;
+  supportLevel: number;
+  recentOutcomes: MathPracticeOutcome[];
+};
+
+export type MathPracticeOutcome = {
+  questionId: string;
+  lessonId: string;
+  representation: string;
+  firstTry: boolean;
+  sessionId: string;
 };
 
 export type FamilyData = {
@@ -47,6 +78,8 @@ export function emptyLearningSignals(): LearningSignals {
     lessonAttempts: {},
     likedLessons: [],
     recentLessons: [],
+    mathPractice: {},
+    mathJourney: [],
   };
 }
 

@@ -2,7 +2,7 @@
 
 The Android project wraps the same tested ColorQuest experience and bundles its web files inside the application. It does not load the GitHub Pages site as its main screen.
 
-Release target: **ColorQuest Kids 2.4.1**, `versionCode` **9**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
+Release target: **ColorQuest Kids 2.5.0**, `versionCode` **10**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
 
 ## What is ready
 
@@ -11,6 +11,7 @@ Release target: **ColorQuest Kids 2.4.1**, `versionCode` **9**. Google Play requ
 - Android source: `android/`
 - Android-targeted web build generated with relative asset paths (copy it into the native project with the final `npm run android:sync`)
 - Multiple on-device child profiles with age-personalized starting worlds and separate progress
+- Fresh adaptive Math mini-quests with per-profile repeat memory, exact-age starting difficulty, gentle support, and evidence-based progression
 - Self-paced resume points with no streaks, deadlines, or locked lesson path
 - Layered Drawing Studio with eight brushes, six base paints, and movable/editable vector shapes
 - Fifi's in-app autosave/start-over guide replaces browser-origin confirmation alerts and works as a mobile bottom sheet
@@ -63,6 +64,8 @@ The normal Android Studio **Run** button creates a debug build and does not prov
 - Complete at least one matching, sorting, sequencing, pattern, odd-one-out, and clue-solving puzzle.
 - Page through the complete advertised puzzle total in each age world and confirm no puzzle repeats before the final page.
 - Open Math and Science in all four age worlds. Answer one concept correctly and try one incorrect answer in each.
+- For an age-6 profile, solve at least ten Math questions in one concept and reopen it; confirm the numbers/pictures vary and no exact question immediately repeats.
+- Miss two Math questions on the first try; confirm Fifi offers a gentler, more concrete challenge without shaming language. Then solve several first try and confirm challenge increases gradually.
 - Confirm the younger Math/Science trails have eight concepts and the older Math trails have 12, all with readable explanations, vocabulary, and an off-screen activity.
 - Open **Explain it another way**, play and pause a concept story, answer incorrectly, and verify the hint is useful without revealing the answer.
 - Finish a lesson, tap **I liked this**, return home, and confirm the mentor reflects the growing interest.
