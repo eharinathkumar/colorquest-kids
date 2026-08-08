@@ -750,6 +750,7 @@ function Studio({
   const [pendingStartOver, setPendingStartOver] = useState<null | (() => void)>(null);
   const [fifiTipOpen, setFifiTipOpen] = useState(false);
   const [recentWork, setRecentWork] = useState<CanvasDraft[]>([]);
+  const [recentWorkOpen, setRecentWorkOpen] = useState(false);
   const fifiMascot = `${import.meta.env.BASE_URL}mascot/fifi-color-spark.png`;
 
   const fifiTips: Record<Activity, string> = {
@@ -798,7 +799,7 @@ function Studio({
   const completedHere = profileProgress.activities[activity].completed.includes(`${age}:${page}`);
 
   return (
-    <main className="studio-page">
+    <main className={`studio-page ${activity === "draw" || activity === "color" ? "creative-focus" : ""}`}>
       <AppHeader compact profile={profile} onProfiles={guard(onProfiles)} onHome={guard(onHome)} onStart={guard(() => onActivity("draw"))} onParents={guard(onParents)} />
       <div className="studio-shell">
         <aside className="studio-sidebar">
@@ -836,6 +837,7 @@ function Studio({
               <h2>{activity === "draw" || activity === "color" ? "Creative Studio" : `${ACTIVITY_META[activity].title} adventure`}</h2>
               {(activity === "draw" || activity === "color") && (
                 <div className="creative-mode-switch" aria-label="Creative Studio mode">
+                  <button className="creative-mobile-home" onClick={onHome} aria-label="Leave Creative Studio">←</button>
                   <button className={activity === "draw" ? "active" : ""} onClick={() => onActivity("draw")} aria-pressed={activity === "draw"}>✏️ Draw freely</button>
                   <button className={activity === "color" ? "active" : ""} onClick={() => onActivity("color")} aria-pressed={activity === "color"}>🎨 Color a picture</button>
                 </div>
@@ -853,14 +855,29 @@ function Studio({
           </div>
 
           {(activity === "draw" || activity === "color") && recentWork.length > 0 && (
-            <nav className="recent-work-strip" aria-label="Four most recent creative canvases">
-              <span><strong>Recent work</strong><small>Saved quietly on this device</small></span>
-              {recentWork.map((draft, index) => {
-                const [, draftActivity, draftAge, draftPage] = draft.id.split(":");
-                const canOpen = draftActivity === "draw" || draftActivity === "color";
-                return <button key={draft.id} disabled={!canOpen} onClick={() => { if (canOpen) onOpenRecent(draftActivity, Number(draftAge), Number(draftPage)); }}><b>{draftActivity === "color" ? "🎨" : "✏️"}</b><span>{draftActivity === "color" ? "Color page" : "Draw canvas"} {draftPage}<small>{index === 0 ? "Newest" : "Recent"}</small></span></button>;
-              })}
-            </nav>
+            <section className="recent-work-drawer">
+              <button
+                type="button"
+                className="recent-work-toggle"
+                aria-expanded={recentWorkOpen}
+                aria-controls="recent-creative-work"
+                onClick={() => setRecentWorkOpen((open) => !open)}
+              >
+                <span aria-hidden="true">🖼️</span>
+                <strong>{recentWorkOpen ? "Hide recent work" : `Recent work (${recentWork.length})`}</strong>
+                <small>{recentWorkOpen ? "Close ↑" : "Open ↓"}</small>
+              </button>
+              {recentWorkOpen && (
+                <nav id="recent-creative-work" className="recent-work-strip" aria-label="Four most recent creative canvases">
+                  <span><strong>Recent work</strong><small>Saved quietly on this device</small></span>
+                  {recentWork.map((draft, index) => {
+                    const [, draftActivity, draftAge, draftPage] = draft.id.split(":");
+                    const canOpen = draftActivity === "draw" || draftActivity === "color";
+                    return <button key={draft.id} disabled={!canOpen} onClick={() => { if (canOpen) onOpenRecent(draftActivity, Number(draftAge), Number(draftPage)); }}><b>{draftActivity === "color" ? "🎨" : "✏️"}</b><span>{draftActivity === "color" ? "Color page" : "Draw canvas"} {draftPage}<small>{index === 0 ? "Newest" : "Recent"}</small></span></button>;
+                  })}
+                </nav>
+              )}
+            </section>
           )}
 
           {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}

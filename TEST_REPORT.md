@@ -1,7 +1,7 @@
-# ColorQuest Kids 2.6.0 test report
+# ColorQuest Kids 2.6.1 test report
 
 Date: August 8, 2026  
-Build target: Android 2.6.0 (`versionCode` 11)  
+Build target: Android 2.6.1 (`versionCode` 12)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
@@ -35,8 +35,8 @@ The production dependency audit reports **0 known vulnerabilities**. No JavaScri
 ## Android configuration checks
 
 - Android 16 / API 36 target and Android 7 / API 24 minimum
-- App version 2.6.0 / code 11
-- Offline cache namespace v2.6.0
+- App version 2.6.1 / code 12
+- Offline cache namespace v2.6.1
 - Cleartext HTTP disabled and Android cloud backup disabled
 - No ads, analytics, child login, camera, microphone, location, contacts, or broad storage access
 - Artwork stays in app storage until a grown-up deliberately exports it

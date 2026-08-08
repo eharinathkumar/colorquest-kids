@@ -1,8 +1,15 @@
-# ColorQuest Kids 2.6.0 — Fifi's Creative Studio
+# ColorQuest Kids 2.6.1 — Clear Canvas tablet update
 
 Release date: August 8, 2026  
-Web version: 2.6.0  
-Android version: 2.6.0 (`versionCode` 11)
+Web version: 2.6.1  
+Android version: 2.6.1 (`versionCode` 12)
+
+## Clear Canvas update
+
+- The Creative Spark prompt no longer covers the drawing canvas.
+- Children can open an idea only when they want one with **Show me an idea**.
+- Recent Work is collapsed behind one compact button and expands on demand.
+- Draw/Color navigation is compressed on phones and tablets so the canvas begins much closer to the top.
 
 ## Headline changes
 

@@ -2,7 +2,7 @@
 
 The Android project wraps the same tested ColorQuest experience and bundles its web files inside the application. It does not load the GitHub Pages site as its main screen.
 
-Release target: **ColorQuest Kids 2.6.0**, `versionCode` **11**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
+Release target: **ColorQuest Kids 2.6.1**, `versionCode` **12**. Google Play requires every uploaded bundle to use a version code higher than all earlier uploads.
 
 ## What is ready
 
