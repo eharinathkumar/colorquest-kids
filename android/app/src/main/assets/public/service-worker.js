@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "colorquest-";
-const VERSION = `${CACHE_PREFIX}v2.6.1`;
+const VERSION = `${CACHE_PREFIX}v2.6.2`;
 const BASE = self.registration.scope;
 const STORY_IDS = ["pips-hat", "moons-sock", "turtles-fast-day", "banana-boots", "polite-volcano", "bubble-bus"];
 const STORY_IMAGES = STORY_IDS.flatMap((story) =>

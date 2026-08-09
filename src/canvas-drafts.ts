@@ -23,6 +23,8 @@ export type CanvasDraft = {
   coloring?: {
     fills: Record<number, string>;
     selectedPaint: string;
+    /** Paint used behind the line art; absent in older drafts means white. */
+    backgroundPaint?: string;
   };
   updatedAt: string;
 };

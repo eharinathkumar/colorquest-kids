@@ -189,6 +189,7 @@ export default function DrawingStudio({
   age,
   profileId,
   profileName,
+  newPageRequest,
   onComplete,
   onSaveArtwork,
   onDirtyChange,
@@ -198,6 +199,8 @@ export default function DrawingStudio({
   age: number;
   profileId: string;
   profileName: string;
+  /** Changes when the top Creative Studio bar asks for a fresh page. */
+  newPageRequest?: number;
   onComplete: () => void;
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
   /** Lets the studio warn before navigation would discard unsaved work. */
@@ -223,6 +226,7 @@ export default function DrawingStudio({
   const [restored, setRestored] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<MobileToolPanel>("brush");
   const [promptOpen, setPromptOpen] = useState(false);
+  const lastNewPageRequest = useRef(newPageRequest);
   const dirty = useRef(false);
   const draftTimer = useRef<number | null>(null);
   const pendingDraft = useRef<Parameters<typeof saveDraft>[0] | null>(null);
@@ -447,6 +451,12 @@ export default function DrawingStudio({
     clearForNewPage();
   };
 
+  useEffect(() => {
+    if (newPageRequest === lastNewPageRequest.current) return;
+    lastNewPageRequest.current = newPageRequest;
+    startOver();
+  }, [newPageRequest]);
+
   const changeBackground = (id: string) => {
     setBackground(id);
     capture(shapes, id);
@@ -565,7 +575,6 @@ export default function DrawingStudio({
             <label className="size-control">Fine tune<input type="range" min="3" max="36" value={size} onChange={(event) => setSize(Number(event.target.value))} /></label>
           </div>
           <button className="tool-button" onClick={undo}>↶ Undo</button>
-          <button className="tool-button" onClick={startOver}>New page</button>
           <button className="save-button" onClick={save}>Save to gallery</button>
         </div>
       </section>

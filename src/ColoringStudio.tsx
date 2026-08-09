@@ -196,17 +196,29 @@ function PaintPart({ id, paintId, onPaint, children }: { id: number; paintId?: s
   );
 }
 
+function PaintBackground({ paintId, onPaint }: { paintId: string; onPaint: () => void }) {
+  const paint = getArtPaint(paintId);
+  const gradientId = `color-background-${safeSvgId(paint.id)}`;
+  return (
+    <g role="button" tabIndex={0} aria-label="Color picture background" onClick={onPaint} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onPaint(); } }} style={{ cursor: "pointer" }}>
+      {paint.colors.length > 1 && <defs><linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">{paint.colors.map((color, index) => <stop key={color} offset={`${index / (paint.colors.length - 1) * 100}%`} stopColor={color} />)}</linearGradient></defs>}
+      <rect width="760" height="500" fill={paint.colors.length > 1 ? `url(#${gradientId})` : paint.colors[0]} />
+    </g>
+  );
+}
+
 export default function ColoringStudio({ page, age, profileId, profileName, onComplete, onSaveArtwork }: { page: number; age: number; profileId: string; profileName: string; onComplete: () => void; onSaveArtwork: (dataUrl: string, title: string) => Promise<void> }) {
   const scene = COLORING_SCENES[(page - 1 + age * 6) % COLORING_SCENES.length];
   const svgRef = useRef<SVGSVGElement>(null);
   const completed = useRef(false);
   const [selectedPaint, setSelectedPaint] = useState(DEFAULT_PAINT);
   const [fills, setFills] = useState<Record<number, string>>({});
+  const [backgroundPaint, setBackgroundPaint] = useState("snow");
   const [message, setMessage] = useState("");
   const [showGradients, setShowGradients] = useState(age > 0);
   const id = draftKey(profileId, "color", age, page);
 
-  useAutoSpeak([scene.title, "Pick a color or gradient, then tap a part of the picture.", scene.fact], `color-${age}-${page}`);
+  useAutoSpeak([scene.title, "Pick a color or gradient, then tap the picture or its background.", scene.fact], `color-${age}-${page}`);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,20 +226,21 @@ export default function ColoringStudio({ page, age, profileId, profileName, onCo
       if (cancelled || !draft?.coloring) return;
       setFills(draft.coloring.fills || {});
       setSelectedPaint(draft.coloring.selectedPaint || DEFAULT_PAINT);
+      setBackgroundPaint(draft.coloring.backgroundPaint || "snow");
       setMessage("Your recent coloring is ready to continue.");
     });
     return () => { cancelled = true; };
   }, [id]);
 
-  const persist = (nextFills: Record<number, string>, nextPaint = selectedPaint) => {
-    void saveDraft({ id, ink: "", shapes: [], background: "paper", coloring: { fills: nextFills, selectedPaint: nextPaint } });
+  const persist = (nextFills: Record<number, string>, nextPaint = selectedPaint, nextBackground = backgroundPaint) => {
+    void saveDraft({ id, ink: "", shapes: [], background: "paper", coloring: { fills: nextFills, selectedPaint: nextPaint, backgroundPaint: nextBackground } });
   };
 
   const paint = (partId: number) => {
     const next = { ...fills, [partId]: selectedPaint };
     setFills(next);
     persist(next);
-    if (!completed.current && Object.keys(next).length >= scene.parts.length) {
+    if (!completed.current && scene.parts.every((_, index) => Boolean(next[index]))) {
       completed.current = true;
       onComplete();
       setMessage("You brought the whole scene to life! ⭐");
@@ -239,10 +252,17 @@ export default function ColoringStudio({ page, age, profileId, profileName, onCo
     persist(fills, paintId);
   };
 
+  const paintBackground = () => {
+    setBackgroundPaint(selectedPaint);
+    persist(fills, selectedPaint, selectedPaint);
+    setMessage("The whole background has a new color! ✨");
+  };
+
   const startOver = () => {
     setFills({});
+    setBackgroundPaint("snow");
     setMessage("Fresh coloring page ready!");
-    persist({});
+    persist({}, selectedPaint, "snow");
   };
 
   const exportPicture = async () => {
@@ -279,6 +299,16 @@ export default function ColoringStudio({ page, age, profileId, profileName, onCo
   return (
     <div className="creative-board color-board coloring-studio-v26">
       <div className="coloring-title-row"><div><span>COLORING STORY</span><h3>{scene.title}</h3><p>{scene.imagine}</p></div><SpeakButton id={`color-story-${scene.id}`} label="Hear the idea" text={[scene.title, scene.imagine]} /></div>
+      <div className="coloring-hero">
+        <div className="coloring-sheet detailed-coloring-sheet">
+          <svg ref={svgRef} viewBox="0 0 760 500" role="img" aria-label={`Color ${scene.aria}`}>
+            <PaintBackground paintId={backgroundPaint} onPaint={paintBackground} />
+            {scene.parts.map((part, index) => <PaintPart key={`${scene.id}-${index}`} id={index} paintId={fills[index]} onPaint={paint}>{part}</PaintPart>)}
+            <g aria-hidden="true">{scene.details}</g>
+          </svg>
+        </div>
+        <p className="background-color-hint">🖼️ Tap any open background space to color the whole scene behind the picture.</p>
+      </div>
       <section className="coloring-palette" aria-label="Coloring tools">
         <div className="palette-heading"><strong>🎨 Pick your paint</strong><small>{ART_PAINTS.length} colors and gradients</small></div>
         <div className="color-tools expanded-palette">
@@ -290,13 +320,6 @@ export default function ColoringStudio({ page, age, profileId, profileName, onCo
           <button className="save-button" onClick={save}>Save to gallery</button>
         </div>
       </section>
-      <div className="coloring-sheet detailed-coloring-sheet">
-        <svg ref={svgRef} viewBox="0 0 760 500" role="img" aria-label={`Color ${scene.aria}`}>
-          <rect width="760" height="500" fill="#fffef9" />
-          {scene.parts.map((part, index) => <PaintPart key={`${scene.id}-${index}`} id={index} paintId={fills[index]} onPaint={paint}>{part}</PaintPart>)}
-          <g aria-hidden="true">{scene.details}</g>
-        </svg>
-      </div>
       <div className="coloring-footer"><div className="learn-bubble"><span>💡 Animal & nature note</span><p>{scene.fact}</p><SpeakButton id={`color-fact-${scene.id}`} label="Hear it" text={scene.fact} /></div><p className="silent-save-note">✓ Recent work saves quietly on this device. Use <strong>Save to gallery</strong> only for a picture you want to keep.</p></div>
       {message && <div className="success-toast" role="status">{message}</div>}
     </div>
