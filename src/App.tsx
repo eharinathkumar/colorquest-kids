@@ -105,6 +105,23 @@ const ACTIVITY_META: Record<Activity, { icon: string; title: string; copy: strin
   discover: { icon: "🔭", title: "Discovery Lab", copy: "Real places, space, stories & math" },
 };
 
+const CHILD_ACTIVITY_LABELS: Record<Activity, string> = {
+  draw: "Draw",
+  color: "Color",
+  puzzle: "Puzzles",
+  stories: "Stories",
+  math: "Number Games",
+  science: "Science",
+  lab: "Try a Lab",
+  discover: "Discover",
+};
+
+const CHILD_GROUP_META = {
+  create: { icon: "🎨", title: "Create", copy: "Draw or color" },
+  "play-read": { icon: "🧩", title: "Play", copy: "Puzzles and stories" },
+  "learn-discover": { icon: "🔭", title: "Learn", copy: "Numbers, science, and wonder" },
+} as const;
+
 const COLORS = ["#ff604f", "#ffd65a", "#24bca4", "#55aaf5", "#7857d6", "#f58bbb", "#173b6d", "#ffffff"];
 const FACTS = [
   "Elephants use their trunks to smell, drink, and say hello.",
@@ -167,7 +184,6 @@ function Home({
   profileProgress,
   profile,
   canContinue,
-  onAge,
   onStart,
   onContinue,
   onParents,
@@ -178,7 +194,6 @@ function Home({
   profileProgress: ProfileProgress;
   profile: ChildProfile;
   canContinue: boolean;
-  onAge: (age: number) => void;
   onStart: (activity?: Activity) => void;
   onContinue: () => void;
   onParents: () => void;
@@ -188,6 +203,8 @@ function Home({
   const recommendations = getMentorRecommendations(age, profileProgress);
   const favorite = getFavoriteInterest(profileProgress);
   const progress = completedCount(profileProgress);
+  const [openGroup, setOpenGroup] = useState<"create" | "play-read" | "learn-discover" | null>(null);
+  const homeGroups = activityGroupsForAge(age);
   // Version the greeting flag so every material Fifi upgrade is visible once
   // after deployment instead of being hidden by an older session marker.
   const welcomeKey = `colorquest-fifi-welcome-v4:${profile.id}`;
@@ -213,7 +230,7 @@ function Home({
     setFifiWelcomeOpen(false);
   };
   return (
-    <main>
+    <main className="child-home-v27">
       <AppHeader profile={profile} onProfiles={onProfiles} onHome={() => window.scrollTo({ top: 0, behavior: "smooth" })} onStart={() => onStart()} onParents={onParents} />
 
       <section className="hero">
@@ -228,7 +245,7 @@ function Home({
           <div className="hero-actions">
             <button className="primary-button" onClick={() => onStart()}>Start creating</button>
             {canContinue && <button className="continue-button" onClick={onContinue}>Continue my adventure →</button>}
-            <a className="text-link" href="#activities">See activities ↓</a>
+            <a className="text-link" href="#activities">Choose an activity ↓</a>
           </div>
           <p className="trust-line">✓ No ads&nbsp;&nbsp; ✓ No sign-up&nbsp;&nbsp; ✓ Kid-safe</p>
         </div>
@@ -241,50 +258,46 @@ function Home({
         </div>
       </section>
 
-      <section className="age-section" id="explore">
-        <div className="section-kicker">Pick your age adventure</div>
-        <div className="age-grid">
-          {AGE_GROUPS.map((group, index) => (
-            <button
-              className={`age-card ${group.color} ${age === index ? "selected" : ""}`}
-              key={group.label}
-              onClick={() => onAge(index)}
-              aria-pressed={age === index}
-            >
-              <span className="age-icon">{group.icon}</span>
-              <span className="age-content">
-                <strong>{group.label}</strong>
-                <small>{group.copy}</small>
-              </span>
-              <span className="round-arrow">→</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
       <section className="activity-section" id="activities">
         <div className="activity-directory-heading">
-          <div><p className="eyebrow">Choose your path</p><h2>What would you like to do?</h2></div>
-          <p>Start anywhere. You can always come home and choose a different path.</p>
+          <div><p className="eyebrow">{AGE_GROUPS[age].icon} Made for age {profile.age}</p><h2>What sounds fun?</h2></div>
+          <p>Choose one big door. Then pick an activity inside.</p>
         </div>
-        <div className="activity-directory">
-          {activityGroupsForAge(age).map((group) => (
-            <section className={`activity-group ${group.id}`} key={group.id} aria-labelledby={`home-${group.id}`}>
-              <header><h3 id={`home-${group.id}`}>{group.title}</h3><p>{group.description}</p></header>
-              <div className="activity-grid">
-                {group.activities.map((key) => (
-                  <button className="activity-card" key={key} onClick={() => onStart(key)}>
-                    <span className="activity-icon">{ACTIVITY_META[key].icon}</span>
-                    <span>
-                      <strong>{ACTIVITY_META[key].title}</strong>
-                      <small>{ACTIVITY_META[key].copy}</small>
-                    </span>
-                    <span className="activity-arrow">→</span>
-                  </button>
-                ))}
+        <div className="home-door-grid" aria-label="Activity doors">
+          {homeGroups.map((group) => {
+            const door = CHILD_GROUP_META[group.id];
+            return (
+              <div className="home-door-slot" key={group.id}>
+                <button
+                  className={`home-door ${group.id} ${openGroup === group.id ? "open" : ""}`}
+                  aria-label={`${door.title}: ${door.copy}`}
+                  onClick={() => setOpenGroup((current) => current === group.id ? null : group.id)}
+                  aria-expanded={openGroup === group.id}
+                  aria-controls={`home-group-${group.id}`}
+                >
+                  <span>{door.icon}</span><strong>{door.title}</strong><small>{door.copy}</small><em aria-hidden="true">→</em>
+                </button>
+                {openGroup === group.id && (
+                  <section className={`home-door-panel ${group.id}`} id={`home-group-${group.id}`} aria-label={`${door.title} activities`}>
+                    <div className="home-door-panel-heading"><span>{door.icon}</span><div><h3>{door.title}</h3><p>Pick one to begin.</p></div></div>
+                    <div className="activity-grid">
+                      {group.activities.map((key) => {
+                        const activityProgress = profileProgress.activities[key];
+                        const hasProgress = activityProgress.completed.length > 0 || activityProgress.lastPage > 1;
+                        return (
+                          <button className="activity-card" key={key} onClick={() => onStart(key)} aria-label={`${CHILD_ACTIVITY_LABELS[key]}, ${hasProgress ? "Keep going" : "New"}`}>
+                            <span className="activity-icon">{ACTIVITY_META[key].icon}</span>
+                            <span><strong>{CHILD_ACTIVITY_LABELS[key]}</strong><small>{hasProgress ? "Keep going" : "New"}</small></span>
+                            <span className="activity-arrow">→</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
               </div>
-            </section>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -707,7 +720,6 @@ function Studio({
   age,
   activity,
   page,
-  onAge,
   onActivity,
   onPage,
   onHome,
@@ -715,8 +727,6 @@ function Studio({
   onLearningAttempt,
   onMathAnswer,
   onLikeLesson,
-  onParents,
-  onProfiles,
   onSaveArtwork,
   onOpenRecent,
 }: {
@@ -725,7 +735,6 @@ function Studio({
   age: number;
   activity: Activity;
   page: number;
-  onAge: (age: number) => void;
   onActivity: (activity: Activity) => void;
   onPage: (page: number) => void;
   onHome: () => void;
@@ -739,8 +748,6 @@ function Studio({
     sessionId: string;
   }) => void;
   onLikeLesson: (lessonId: string, interest: InterestKey) => void;
-  onParents: () => void;
-  onProfiles: () => void;
   onSaveArtwork: (dataUrl: string, title: string) => Promise<void>;
   onOpenRecent: (activity: "draw" | "color", ageWorld: number, page: number) => void;
 }) {
@@ -752,6 +759,8 @@ function Studio({
   const [recentWork, setRecentWork] = useState<CanvasDraft[]>([]);
   const [recentWorkOpen, setRecentWorkOpen] = useState(false);
   const [newDrawingPageRequest, setNewDrawingPageRequest] = useState(0);
+  const [activityChooserOpen, setActivityChooserOpen] = useState(false);
+  const [chooserGroup, setChooserGroup] = useState<"create" | "play-read" | "learn-discover" | null>(null);
   const fifiMascot = `${import.meta.env.BASE_URL}mascot/fifi-color-spark.png`;
 
   const fifiTips: Record<Activity, string> = {
@@ -785,6 +794,20 @@ function Studio({
     return () => { active = false; window.removeEventListener("colorquest:draft-saved", onDraftSaved); };
   }, [profile.id]);
 
+  useEffect(() => {
+    if (!activityChooserOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActivityChooserOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [activityChooserOpen]);
+
   const dismissFifiTip = () => {
     try {
       window.localStorage.setItem(`colorquest-fifi-tip-v1:${profile.id}:${activity}`, "seen");
@@ -801,44 +824,19 @@ function Studio({
 
   return (
     <main className={`studio-page ${activity === "draw" || activity === "color" ? "creative-focus" : ""}`}>
-      <AppHeader compact profile={profile} onProfiles={guard(onProfiles)} onHome={guard(onHome)} onStart={guard(() => onActivity("draw"))} onParents={guard(onParents)} />
-      <div className="studio-shell">
-        <aside className="studio-sidebar">
-          <button className="back-home" onClick={guard(onHome)}>← Home</button>
-          <p className="sidebar-label">My age world</p>
-          <div className="age-pills">
-            {AGE_GROUPS.map((group, index) => (
-              <button key={group.short} className={age === index ? "active" : ""} onClick={guard(() => onAge(index))}>
-                <span>{group.icon}</span>{group.short}
-              </button>
-            ))}
-          </div>
-          <nav className="studio-activity-directory" aria-label="Activity paths">
-            {activityGroupsForAge(age).map((group) => (
-              <section className="studio-activity-group" key={group.id}>
-                <p className="sidebar-label">{group.title}</p>
-                <div className="activity-tabs">
-                  {group.activities.map((key) => (
-                    <button key={key} className={activity === key ? "active" : ""} onClick={guard(() => onActivity(key))}>
-                      <span>{ACTIVITY_META[key].icon}</span>
-                      <span><strong>{ACTIVITY_META[key].title}</strong><small>{ACTIVITY_META[key].copy}</small><em>{profileProgress.activities[key].completed.length} completed</em></span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </nav>
-          <div className="screen-break"><span>🌿</span><p>After a few activities, look at something far away and stretch.</p></div>
-        </aside>
-
+      <header className="workspace-topbar">
+        <button className="workspace-back" onClick={guard(onHome)} aria-label={activity === "draw" || activity === "color" ? "Leave Creative Studio" : "Back to Home"}>←</button>
+        <div className="workspace-title"><span aria-hidden="true">{ACTIVITY_META[activity].icon}</span><strong>{CHILD_ACTIVITY_LABELS[activity]}</strong></div>
+        <button className="workspace-switch" onClick={() => { setChooserGroup(null); setActivityChooserOpen(true); }} aria-haspopup="dialog">Activities</button>
+      </header>
+      <div className="studio-shell focused-studio-shell">
         <section className="studio-content">
           <div className="studio-heading">
             <div>
-              <p>{AGE_GROUPS[age].label} · {AGE_GROUPS[age].skill}</p>
-              <h2>{activity === "draw" || activity === "color" ? "Creative Studio" : `${ACTIVITY_META[activity].title} adventure`}</h2>
+              <p>{AGE_GROUPS[age].icon} Made for age {profile.age}</p>
+              <h2>{activity === "draw" || activity === "color" ? "Creative Studio" : CHILD_ACTIVITY_LABELS[activity]}</h2>
               {(activity === "draw" || activity === "color") && (
                 <div className="creative-mode-switch" aria-label="Creative Studio mode">
-                  <button className="creative-mobile-home" onClick={onHome} aria-label="Leave Creative Studio">←</button>
                   <button className={activity === "draw" ? "active" : ""} onClick={() => onActivity("draw")} aria-pressed={activity === "draw"}>✏️ Draw freely</button>
                   <button className={activity === "color" ? "active" : ""} onClick={() => onActivity("color")} aria-pressed={activity === "color"}>🎨 Color a picture</button>
                 </div>
@@ -922,6 +920,40 @@ function Studio({
           />
         </section>
       </div>
+      {activityChooserOpen && (
+        <div className="workspace-switcher-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setActivityChooserOpen(false); }}>
+          <section className="workspace-switcher" role="dialog" aria-modal="true" aria-labelledby="workspace-switcher-title">
+            <div className="workspace-switcher-heading"><div><span aria-hidden="true">✨</span><div><h2 id="workspace-switcher-title">{chooserGroup ? CHILD_GROUP_META[chooserGroup].title : "What next?"}</h2><p>{chooserGroup ? "Pick one activity." : "Choose a door."}</p></div></div><button autoFocus onClick={() => setActivityChooserOpen(false)} aria-label="Close activity chooser">×</button></div>
+            <div className="workspace-choice-grid">
+              {!chooserGroup && activityGroupsForAge(age).map((group) => {
+                const door = CHILD_GROUP_META[group.id];
+                return <button key={group.id} aria-label={`${door.title}: ${door.copy}`} onClick={() => setChooserGroup(group.id)}><span aria-hidden="true">{door.icon}</span><strong>{door.title}</strong><small>{door.copy}</small></button>;
+              })}
+              {chooserGroup && activityGroupsForAge(age).find((group) => group.id === chooserGroup)?.activities.map((key) => {
+                  const activityProgress = profileProgress.activities[key];
+                  const hasProgress = activityProgress.completed.length > 0 || activityProgress.lastPage > 1;
+                  return (
+                    <button
+                      key={key}
+                      className={activity === key ? "active" : ""}
+                      aria-label={`${CHILD_ACTIVITY_LABELS[key]}, ${activity === key ? "You are here" : hasProgress ? "Keep going" : "New"}`}
+                      onClick={() => {
+                        onActivity(key);
+                        setActivityChooserOpen(false);
+                        setChooserGroup(null);
+                        window.scrollTo({ top: 0 });
+                      }}
+                    >
+                      <span aria-hidden="true">{ACTIVITY_META[key].icon}</span><strong>{CHILD_ACTIVITY_LABELS[key]}</strong><small>{activity === key ? "You are here" : hasProgress ? "Keep going" : "New"}</small>
+                    </button>
+                  );
+                })}
+            </div>
+            {chooserGroup && <button className="workspace-home-link" onClick={() => setChooserGroup(null)}>← Back to Create, Play, Learn</button>}
+            <button className="workspace-home-link" onClick={onHome}>⌂ Go Home</button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
@@ -1240,6 +1272,7 @@ export default function ColorQuestApp() {
     setActivity(nextActivity);
     setPage(nextPage);
     setFamily((current) => recordLocation(current, activeProfile.id, nextActivity, nextPage));
+    window.scrollTo({ top: 0 });
   };
 
   const changePage = (nextPage: number) => {
@@ -1295,10 +1328,10 @@ export default function ColorQuestApp() {
     : view === "profiles"
       ? <ProfileHub profiles={family.profiles} activeProfileId={activeProfile.id} onSelect={selectProfile} onAdd={() => setView("profile-new")} onBack={() => setView("home")} />
       : view === "studio"
-        ? <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onAge={changeAge} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onMathAnswer={mathAnswer} onLikeLesson={likeLesson} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} onSaveArtwork={saveArtwork} onOpenRecent={openRecentCreative} />
+        ? <Studio profile={activeProfile} profileProgress={activeProgress} age={age} activity={activity} page={page} onActivity={changeActivity} onPage={changePage} onHome={() => setView("home")} onComplete={complete} onLearningAttempt={learningAttempt} onMathAnswer={mathAnswer} onLikeLesson={likeLesson} onSaveArtwork={saveArtwork} onOpenRecent={openRecentCreative} />
         : view === "parents"
           ? <ParentCorner family={family} activeProfile={activeProfile} age={age} artworkRevision={artworkRevision} onHome={() => setView("home")} onProfiles={() => setView("profiles")} onUpdateProfile={updateProfile} onDeleteProfile={deleteProfile} />
-          : <Home age={age} profileProgress={activeProgress} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || safeResume.page > 1} onAge={changeAge} onStart={start} onStartLesson={(subject, lessonPage) => start(subject, false, lessonPage)} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;
+          : <Home age={age} profileProgress={activeProgress} profile={activeProfile} canContinue={completedCount(activeProgress) > 0 || safeResume.page > 1} onStart={start} onStartLesson={(subject, lessonPage) => start(subject, false, lessonPage)} onContinue={continueAdventure} onParents={() => setView("parents")} onProfiles={() => setView("profiles")} />;
 
   // Read-aloud pace follows the age world the child is currently exploring.
   return <SpeechProvider ageWorld={age}>{screen}</SpeechProvider>;

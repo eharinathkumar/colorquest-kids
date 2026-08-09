@@ -92,6 +92,15 @@ async function passGrownUpGate(user: ReturnType<typeof userEvent.setup>, confirm
   await user.click(screen.getByRole("button", { name: confirmLabel }));
 }
 
+async function openHomeActivity(
+  user: ReturnType<typeof userEvent.setup>,
+  door: "Create" | "Play" | "Learn",
+  activity: RegExp,
+) {
+  await user.click(screen.getByRole("button", { name: new RegExp(`^${door}`) }));
+  await user.click(screen.getByRole("button", { name: activity }));
+}
+
 describe("ColorQuest core journeys", () => {
   it("greets the active child with Fifi's age-aware speech bubble", () => {
     render(<ColorQuestApp />);
@@ -170,6 +179,7 @@ describe("ColorQuest core journeys", () => {
     fireEvent.pointerDown(canvas, { clientX: 60, clientY: 80, pointerId: 7 });
     fireEvent.pointerMove(canvas, { clientX: 110, clientY: 120, pointerId: 7 });
     fireEvent.pointerUp(canvas, { clientX: 110, clientY: 120, pointerId: 7 });
+    await user.click(screen.getByRole("button", { name: "Leave Creative Studio" }));
     await user.click(screen.getByRole("button", { name: "Grown-ups" }));
 
     expect(browserConfirm).not.toHaveBeenCalled();
@@ -208,6 +218,7 @@ describe("ColorQuest core journeys", () => {
     await user.click(screen.getByRole("button", { name: "Save to gallery" }));
     expect(screen.getByRole("status").textContent).toContain("Saved privately");
 
+    await user.click(screen.getByRole("button", { name: "Leave Creative Studio" }));
     await user.click(screen.getByRole("button", { name: "Grown-ups" }));
     await passGrownUpGate(user, "Open parent corner");
     const exportButton = await screen.findByRole("button", { name: "Download / share" });
@@ -220,7 +231,7 @@ describe("ColorQuest core journeys", () => {
   it("colors a drawing and keeps the coloring activity usable", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
-    await user.click(screen.getByRole("button", { name: /Color27 scenes to fill with color/ }));
+    await openHomeActivity(user, "Create", /^Color,/);
 
     const picture = screen.getByRole("img", { name: /Color / });
     const palette = screen.getByRole("region", { name: "Coloring tools" });
@@ -251,7 +262,7 @@ describe("Private child profiles and pacing", () => {
     await user.click(screen.getByRole("button", { name: /Create Aria's space/ }));
 
     expect(screen.getByRole("button", { name: "Switch profile, currently Aria" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Ages 7–9/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("🚀 Made for age 9")).toBeTruthy();
     await waitFor(() => {
       const saved = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
       expect(saved.progress[saved.activeProfileId!].legacyCompleted).toBe(4);
@@ -317,7 +328,7 @@ describe("Varied puzzle catalog", () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
 
-    await user.click(screen.getByRole("button", { name: /Build puzzlesMatch, sort, sequence, reason/ }));
+    await openHomeActivity(user, "Play", /^Puzzles/);
     expect(screen.getByText("Partner match")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Next puzzle" }));
@@ -356,11 +367,43 @@ describe("Child-friendly activity organization", () => {
     expect(safeResumeLocation(progress, 1)).toEqual({ activity: "draw", page: 1 });
   });
 
-  it("shows the three activity paths on Home", () => {
+  it("shows three simple activity doors on Home", () => {
     render(<ColorQuestApp />);
-    expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Play & Read" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Learn & Discover" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Create/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Play/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Learn/ })).toBeTruthy();
+    expect(screen.queryByText("0 completed")).toBeNull();
+  });
+
+  it("opens a focused workspace without the Home launcher or age selector", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await openHomeActivity(user, "Play", /^Stories/);
+
+    expect(screen.getByRole("heading", { name: "Stories" })).toBeTruthy();
+    expect(document.querySelector(".studio-sidebar")).toBeNull();
+    expect(document.querySelector(".child-home-v27, .home-door-grid, .activity-section, .age-grid, .topbar")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Create/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Switch profile/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Activities" })).toBeTruthy();
+  });
+
+  it("switches activities inside a focused chooser and closes it with Escape", async () => {
+    const user = userEvent.setup();
+    render(<ColorQuestApp />);
+    await openHomeActivity(user, "Play", /^Puzzles/);
+    await user.click(screen.getByRole("button", { name: "Activities" }));
+    expect(screen.getByRole("dialog", { name: "What next?" })).toBeTruthy();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "What next?" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Activities" }));
+    await user.click(screen.getByRole("button", { name: /^Learn:/ }));
+    await user.click(screen.getByRole("button", { name: /^Science,/ }));
+    expect(screen.getByRole("heading", { name: "Science" })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "What next?" })).toBeNull();
+    expect(document.querySelector(".child-home-v27, .home-door-grid, .activity-section, .age-grid, .topbar")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Switch profile/ })).toBeNull();
   });
 
   it("keeps every outside resource HTTPS and on an approved education host", () => {
@@ -401,9 +444,9 @@ describe("Math and science learning trails", () => {
     const lesson = getLearningLesson("math", 1, 1);
     render(<ColorQuestApp />);
 
-    await user.click(screen.getByRole("button", { name: /MathBig ideas made visible/ }));
+    await openHomeActivity(user, "Learn", /^Number Games/);
 
-    expect(screen.getByRole("heading", { name: "Math adventure" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Number Games" })).toBeTruthy();
     expect(screen.getByText(lesson.bigIdea)).toBeTruthy();
     expect(screen.getByText("TRY IT AWAY FROM THE SCREEN")).toBeTruthy();
     const freshChoices = Array.from(document.querySelectorAll<HTMLButtonElement>(".question-card .answer-grid button"));
@@ -417,7 +460,7 @@ describe("Math and science learning trails", () => {
   it("gives an age-six child a fresh Math question and remembers the result", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
-    await user.click(screen.getByRole("button", { name: /MathBig ideas made visible/ }));
+    await openHomeActivity(user, "Learn", /^Number Games/);
 
     const firstPrompt = document.querySelector(".question-card h4")?.textContent;
     expect(firstPrompt).toBeTruthy();
@@ -441,7 +484,7 @@ describe("Math and science learning trails", () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
 
-    await user.click(screen.getByRole("button", { name: /MathBig ideas made visible/ }));
+    await openHomeActivity(user, "Learn", /^Number Games/);
     expect(screen.getByText("Play & notice")).toBeTruthy();
     expect(document.querySelectorAll(".question-card .answer-grid button")).toHaveLength(2);
     await user.click(document.querySelector<HTMLButtonElement>(".question-card .answer-grid button")!);
@@ -451,14 +494,16 @@ describe("Math and science learning trails", () => {
   });
 
   it("adapts science language and topics for ages 10–12", async () => {
+    const family = JSON.parse(window.localStorage.getItem(PROFILE_STORAGE_KEY) || "{}") as FamilyData;
+    family.profiles[0].age = 11;
+    window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(family));
     const user = userEvent.setup();
     const lesson = getLearningLesson("science", 3, 1);
     render(<ColorQuestApp />);
 
-    await user.click(screen.getByRole("button", { name: /Ages 10–12/ }));
-    await user.click(screen.getByRole("button", { name: /ScienceAsk, observe, explain/ }));
+    await openHomeActivity(user, "Learn", /^Science/);
 
-    expect(screen.getByRole("heading", { name: "Science adventure" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Science" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: lesson.title })).toBeTruthy();
     expect(screen.getByText(lesson.explanation)).toBeTruthy();
     expect(screen.getByText("Concept 1 of 8")).toBeTruthy();
@@ -467,7 +512,7 @@ describe("Math and science learning trails", () => {
   it("adds another explanation, a concept story, and remembers a child's interest", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
-    await user.click(screen.getByRole("button", { name: /ScienceAsk, observe, explain/ }));
+    await openHomeActivity(user, "Learn", /^Science/);
 
     await user.click(screen.getByRole("button", { name: "Explain it another way" }));
     expect(screen.getByText("Let’s unpack it")).toBeTruthy();
@@ -501,7 +546,7 @@ describe("Science Lab and mentor paths", () => {
   it("requires prediction and safe steps before revealing a lab explanation", async () => {
     const user = userEvent.setup();
     render(<ColorQuestApp />);
-    await user.click(screen.getByRole("button", { name: /Science LabPredict, test safely, explain/ }));
+    await openHomeActivity(user, "Learn", /^Try a Lab/);
     const lab = getScienceLabs(1)[0];
     const reveal = screen.getByRole("button", { name: "Reveal the science" });
     expect(reveal.hasAttribute("disabled")).toBe(true);
