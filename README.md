@@ -2,6 +2,12 @@
 
 ColorQuest Kids is a free, ad-free, installable creative learning app for ages 1–12. It includes free drawing, shape building, coloring, funny illustrated storybooks, varied reasoning puzzles, guided Math and Science trails, hands-on Science Labs, and Discovery Lab missions covering nature, geography, science, mathematics, and space.
 
+## New in version 2.7.1 — Accurate tablet painting
+
+- Brush, finger, mouse, and stylus coordinates now stay aligned when responsive phone or tablet layouts resize the visible canvas.
+- Editable shapes use the same logical canvas coordinate system, so ink and shapes remain together after responsive scaling.
+- The offline cache version advances to ensure installed apps receive the correction.
+
 ## New in version 2.7 — Focused kid workspaces
 
 - Home now presents three large, familiar doors: **Create**, **Play**, and **Learn**

@@ -1,8 +1,14 @@
-# ColorQuest Kids 2.7.0 — Focused Kid Workspaces
+# ColorQuest Kids 2.7.1 — Accurate Tablet Painting
 
-Release date: August 8, 2026  
-Web version: 2.7.0  
-Android version: 2.7.0 (`versionCode` 14)
+Release date: August 9, 2026  
+Web version: 2.7.1  
+Android version: 2.7.1 (`versionCode` 15)
+
+## Hotfix
+
+- Corrected canvas pointer mapping after responsive phone/tablet scaling, keeping paint directly under the child’s finger or stylus.
+- Aligned the editable shape layer to the canvas logical dimensions.
+- Added focused regression coverage for normal, scaled, and temporarily hidden canvases.
 
 ## What changed
 

@@ -18,6 +18,27 @@ type ShapeItem = {
 
 type CanvasHistory = { ink: string; shapes: ShapeItem[]; background: string };
 type MobileToolPanel = "brush" | "paint" | "shape";
+type CanvasPoint = { x: number; y: number };
+
+/**
+ * Pointer events report CSS-screen pixels, while the drawing canvas keeps its
+ * own logical coordinate space. Responsive tablet layouts can resize the
+ * visible canvas after it is prepared, so translate through both spaces.
+ */
+export function mapClientPointToCanvas(
+  clientX: number,
+  clientY: number,
+  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  logicalWidth: number,
+  logicalHeight: number,
+): CanvasPoint {
+  const renderedWidth = rect.width > 0 ? rect.width : logicalWidth;
+  const renderedHeight = rect.height > 0 ? rect.height : logicalHeight;
+  return {
+    x: (clientX - rect.left) * (logicalWidth / Math.max(1, renderedWidth)),
+    y: (clientY - rect.top) * (logicalHeight / Math.max(1, renderedHeight)),
+  };
+}
 
 const BRUSHES: Array<{ id: BrushKind; icon: string; label: string }> = [
   { id: "marker", icon: "🖌️", label: "Paint" },
@@ -209,6 +230,7 @@ export default function DrawingStudio({
   onRequestStartOver?: (confirm: () => void) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasPixelRatio = useRef(1);
   const historyRef = useRef<CanvasHistory[]>([]);
   const drawing = useRef(false);
   const previousPoint = useRef<{ x: number; y: number } | null>(null);
@@ -226,6 +248,7 @@ export default function DrawingStudio({
   const [restored, setRestored] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<MobileToolPanel>("brush");
   const [promptOpen, setPromptOpen] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 560 });
   const lastNewPageRequest = useRef(newPageRequest);
   const dirty = useRef(false);
   const draftTimer = useRef<number | null>(null);
@@ -242,6 +265,8 @@ export default function DrawingStudio({
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     const displayWidth = Math.max(320, rect.width || 800);
     const displayHeight = Math.max(440, rect.height || 560);
+    canvasPixelRatio.current = ratio;
+    setCanvasSize({ width: displayWidth, height: displayHeight });
     canvas.width = Math.round(displayWidth * ratio);
     canvas.height = Math.round(displayHeight * ratio);
     const ctx = canvas.getContext("2d");
@@ -309,8 +334,16 @@ export default function DrawingStudio({
   }, [draftId, markDirty]);
 
   const point = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = event.currentTarget;
     const rect = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const ratio = canvasPixelRatio.current || 1;
+    return mapClientPointToCanvas(
+      event.clientX,
+      event.clientY,
+      rect,
+      canvas.width / ratio,
+      canvas.height / ratio,
+    );
   };
 
   const capture = (nextShapes = shapes, nextBackground = background) => {
@@ -622,11 +655,14 @@ export default function DrawingStudio({
         <svg
           className="shape-layer"
           aria-label="Editable shapes"
+          viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`}
+          preserveAspectRatio="none"
           onPointerMove={(event) => {
             if (!dragShape.current) return;
             const rect = event.currentTarget.getBoundingClientRect();
-            const x = event.clientX - rect.left - dragShape.current.offsetX;
-            const y = event.clientY - rect.top - dragShape.current.offsetY;
+            const pointer = mapClientPointToCanvas(event.clientX, event.clientY, rect, canvasSize.width, canvasSize.height);
+            const x = pointer.x - dragShape.current.offsetX;
+            const y = pointer.y - dragShape.current.offsetY;
             setShapes((items) => items.map((item) => item.id === dragShape.current?.id ? { ...item, x, y } : item));
           }}
           onPointerUp={() => { if (dragShape.current) capture(shapes); dragShape.current = null; }}
@@ -653,8 +689,9 @@ export default function DrawingStudio({
               onPointerDown={(event) => {
                 event.stopPropagation();
                 const rect = event.currentTarget.ownerSVGElement!.getBoundingClientRect();
+                const pointer = mapClientPointToCanvas(event.clientX, event.clientY, rect, canvasSize.width, canvasSize.height);
                 setSelectedShapeId(item.id);
-                dragShape.current = { id: item.id, offsetX: event.clientX - rect.left - item.x, offsetY: event.clientY - rect.top - item.y };
+                dragShape.current = { id: item.id, offsetX: pointer.x - item.x, offsetY: pointer.y - item.y };
                 event.currentTarget.ownerSVGElement?.setPointerCapture?.(event.pointerId);
               }}
               onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedShapeId(item.id); }}

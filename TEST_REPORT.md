@@ -1,12 +1,14 @@
-# ColorQuest Kids 2.7.0 test report
+# ColorQuest Kids 2.7.1 test report
 
-Date: August 8, 2026  
-Build target: Android 2.7.0 (`versionCode` 14)  
+Date: August 9, 2026  
+Build target: Android 2.7.1 (`versionCode` 15)  
 Application ID: `com.harinath.colorquestkids`
 
 ## Automated result
 
-**PASS — 86 of 86 tests across nine test files.** `npm run check` completed successfully: TypeScript passed and the production GitHub Pages build completed. `npm run android:sync` then rebuilt the Android-targeted web app and copied it into the native project successfully.
+**PASS — 89 of 89 tests across ten test files.** `npm run check` completed successfully: TypeScript passed and the production GitHub Pages build completed. `npm run android:sync` then rebuilt the Android-targeted web app and copied it into the native project successfully.
+
+Canvas coordinate coverage verifies direct alignment on an unscaled canvas, accurate logical mapping after responsive tablet scaling, and safe behavior while a canvas has no measurable rendered size.
 
 Focused-workspace coverage verifies that opening an activity removes the Home launcher, old studio sidebar, and age controls; the compact Back and activity-switch controls remain available.
 
@@ -32,13 +34,13 @@ The production dependency audit reports **0 known vulnerabilities**. No JavaScri
 
 ## Preserved whole-app coverage
 
-- 86 total tests also cover profiles, exact-age routing, resume points, progress isolation, Fifi, read-aloud, storybooks, six puzzle mechanics and deduplicated routing, 72 Math/Science concepts, adaptive Math question generation and progression, 47 Science Labs, mentor recommendations, approved external learning hosts, and 400 distinct Discovery missions in each older age world.
+- 89 total tests also cover profiles, exact-age routing, resume points, progress isolation, Fifi, read-aloud, storybooks, six puzzle mechanics and deduplicated routing, 72 Math/Science concepts, adaptive Math question generation and progression, 47 Science Labs, mentor recommendations, approved external learning hosts, and 400 distinct Discovery missions in each older age world.
 
 ## Android configuration checks
 
 - Android 16 / API 36 target and Android 7 / API 24 minimum
-- App version 2.7.0 / code 14
-- Offline cache namespace v2.7.0
+- App version 2.7.1 / code 15
+- Offline cache namespace v2.7.1
 - Cleartext HTTP disabled and Android cloud backup disabled
 - No ads, analytics, child login, camera, microphone, location, contacts, or broad storage access
 - Artwork stays in app storage until a grown-up deliberately exports it
