@@ -1,8 +1,16 @@
-# ColorQuest Kids 2.6.1 — Clear Canvas tablet update
+# ColorQuest Kids 2.6.2 — Art-first Creative Studio
 
 Release date: August 8, 2026  
-Web version: 2.6.1  
-Android version: 2.6.1 (`versionCode` 12)
+Web version: 2.6.2  
+Android version: 2.6.2 (`versionCode` 13)
+
+## Art-first layout update
+
+- **New page** now sits beside **Recent Work** at the top of Draw Freely.
+- Coloring pictures appear before the paint controls so the artwork is the screen hero.
+- The paint palette and save controls sit below the picture.
+- Children can color the picture background with any solid color or gradient by tapping open background space.
+- Background paint is quietly restored with the rest of the child's recent work.
 
 ## Clear Canvas update
 

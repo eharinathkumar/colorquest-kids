@@ -751,6 +751,7 @@ function Studio({
   const [fifiTipOpen, setFifiTipOpen] = useState(false);
   const [recentWork, setRecentWork] = useState<CanvasDraft[]>([]);
   const [recentWorkOpen, setRecentWorkOpen] = useState(false);
+  const [newDrawingPageRequest, setNewDrawingPageRequest] = useState(0);
   const fifiMascot = `${import.meta.env.BASE_URL}mascot/fifi-color-spark.png`;
 
   const fifiTips: Record<Activity, string> = {
@@ -854,19 +855,24 @@ function Studio({
             </div>
           </div>
 
-          {(activity === "draw" || activity === "color") && recentWork.length > 0 && (
+          {(activity === "draw" || (activity === "color" && recentWork.length > 0)) && (
             <section className="recent-work-drawer">
-              <button
-                type="button"
-                className="recent-work-toggle"
-                aria-expanded={recentWorkOpen}
-                aria-controls="recent-creative-work"
-                onClick={() => setRecentWorkOpen((open) => !open)}
-              >
-                <span aria-hidden="true">🖼️</span>
-                <strong>{recentWorkOpen ? "Hide recent work" : `Recent work (${recentWork.length})`}</strong>
-                <small>{recentWorkOpen ? "Close ↑" : "Open ↓"}</small>
-              </button>
+              <div className="creative-work-actions">
+                {activity === "draw" && <button type="button" className="new-page-button" onClick={() => setNewDrawingPageRequest((request) => request + 1)}><span aria-hidden="true">📄</span><strong>New page</strong></button>}
+                {recentWork.length > 0 && (
+                  <button
+                    type="button"
+                    className="recent-work-toggle"
+                    aria-expanded={recentWorkOpen}
+                    aria-controls="recent-creative-work"
+                    onClick={() => setRecentWorkOpen((open) => !open)}
+                  >
+                    <span aria-hidden="true">🖼️</span>
+                    <strong>{recentWorkOpen ? "Hide recent work" : `Recent work (${recentWork.length})`}</strong>
+                    <small>{recentWorkOpen ? "Close ↑" : "Open ↓"}</small>
+                  </button>
+                )}
+              </div>
               {recentWorkOpen && (
                 <nav id="recent-creative-work" className="recent-work-strip" aria-label="Four most recent creative canvases">
                   <span><strong>Recent work</strong><small>Saved quietly on this device</small></span>
@@ -880,7 +886,7 @@ function Studio({
             </section>
           )}
 
-          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}
+          {activity === "draw" && <DrawingStudio key={`d-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} newPageRequest={newDrawingPageRequest} onComplete={onComplete} onSaveArtwork={onSaveArtwork} onRequestStartOver={(confirm) => setPendingStartOver(() => confirm)} />}
           {activity === "color" && <ColoringStudio key={`c-${page}-${age}-${profile.id}`} page={page} age={age} profileId={profile.id} profileName={profile.name} onComplete={onComplete} onSaveArtwork={onSaveArtwork} />}
           {activity === "puzzle" && <VariedPuzzleBoard key={`p-${page}-${age}`} page={page} age={age} onComplete={onComplete} />}
           {activity === "stories" && <StorybookBoard key={`story-${page}-${age}`} page={page} age={age} onSelectBook={onPage} onComplete={onComplete} />}

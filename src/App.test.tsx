@@ -109,6 +109,7 @@ describe("ColorQuest core journeys", () => {
     expect(screen.getByRole("heading", { name: "Creative Studio" })).toBeTruthy();
     expect(screen.getByLabelText("Free drawing canvas")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Leave Creative Studio" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "New page" })).toBeTruthy();
     expect(document.querySelector(".canvas-stage .prompt-card")).toBeNull();
     const ideaButton = screen.getByRole("button", { name: "Show me an idea" });
     expect(ideaButton.getAttribute("aria-expanded")).toBe("false");
@@ -187,6 +188,7 @@ describe("ColorQuest core journeys", () => {
     fireEvent.pointerUp(canvas, { clientX: 105, clientY: 125, pointerId: 9 });
 
     const recentToggle = await screen.findByRole("button", { name: /Recent work/ });
+    expect(recentToggle.parentElement?.contains(screen.getByRole("button", { name: "New page" }))).toBe(true);
     await user.click(recentToggle);
     const recent = await screen.findByRole("navigation", { name: "Four most recent creative canvases" });
     expect(recent).toBeTruthy();
@@ -220,7 +222,14 @@ describe("ColorQuest core journeys", () => {
     render(<ColorQuestApp />);
     await user.click(screen.getByRole("button", { name: /Color27 scenes to fill with color/ }));
 
+    const picture = screen.getByRole("img", { name: /Color / });
+    const palette = screen.getByRole("region", { name: "Coloring tools" });
+    expect(picture.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
     await user.click(screen.getByRole("button", { name: "Choose Sunshine" }));
+    const background = screen.getByRole("button", { name: "Color picture background" });
+    await user.click(background);
+    expect(background.querySelector("rect")?.getAttribute("fill")).toBe("#ffd65a");
     const firstPart = screen.getByRole("button", { name: "Color part 1" });
     await user.click(firstPart);
 
