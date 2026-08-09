@@ -1,8 +1,18 @@
-# ColorQuest Kids 2.6.2 — Art-first Creative Studio
+# ColorQuest Kids 2.7.0 — Focused Kid Workspaces
 
 Release date: August 8, 2026  
-Web version: 2.6.2  
-Android version: 2.6.2 (`versionCode` 13)
+Web version: 2.7.0  
+Android version: 2.7.0 (`versionCode` 14)
+
+## What changed
+
+- Home now offers three clear doors—Create, Play, and Learn—rather than seven competing activity choices.
+- A chosen door reveals only its relevant activities, with child-friendly `New` and `Keep going` labels.
+- Every activity opens in a dedicated workspace. The Home launcher, age selector, masthead, and completion counters no longer stack above the activity.
+- A compact workspace bar provides predictable Back, current activity, profile, and `Choose another` controls.
+- On phones, `Choose another` opens as a large bottom sheet; on tablets and desktop it becomes a roomy modal.
+- Draw and Color remain immersive and artwork-first. Stories, puzzles, Math, Science, labs, and Discovery begin directly below the compact workspace controls.
+- The active child’s exact age drives content; age changes remain in profile/grown-up controls rather than the child’s activity screen.
 
 ## Art-first layout update
 
